@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "github.com/Lukiya/oauth2go/go/model";
+
+message Client {
+    string ID = 1;
+    string Secret  = 2;
+    int32 AccessTokenExpireSeconds  = 3;
+    int32 RefreshTokenExpireSeconds  = 4;
+    repeated string Grants  = 5;
+    repeated string Scopes  = 6;
+    repeated string RedirectUris  = 7;
+}
+
+message TokenRequestInfo {
+    string ClientID = 1; 
+    string Scopes = 2; 
+    string RedirectUri = 3; 
+    string Username = 4; 
+    string CodeChanllenge = 5; 
+    string CodeChanllengeMethod = 6; 
+}

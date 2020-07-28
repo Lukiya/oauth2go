@@ -1,0 +1,1 @@
+openssl req -new -x509 -newkey rsa:2048 -sha256 -nodes -keyout ./test.key -days 3560 -out ./test.cer -config ./test.cnf
