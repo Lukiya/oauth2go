@@ -1,0 +1,34 @@
+// Main page template. Implements BasePage methods.
+
+{% code
+type LoginPage struct {
+    BasePage
+    ReturnURL string
+}
+%}
+
+
+{% func (p *LoginPage) Body() %}
+<div class="login-form">
+<form class="form-signin" action="/account/login?returnUrl={%s p.ReturnURL %}" method="post">
+<div class="avatar"><i class="far fa-user"></i></div>
+<h4 class="modal-title">Login to Your Account</h4>
+<div class="form-group">
+<input type="text" name="Username" class="form-control" placeholder="Username" required autofocus />
+</div>
+<div class="form-group">
+<input type="password" name="Password" class="form-control" placeholder="Password" required />
+</div>
+<div class="form-group small clearfix">
+<label class="checkbox-inline"><input type="checkbox" /> Remember me</label>
+<a href="#" class="forgot-link">Forgot Password?</a>
+</div>
+<button type="submit" class="btn btn-primary btn-block btn-lg" value="Login">Login</button>
+<input id="Token" name="Token" type="hidden" />
+</form>
+</div>
+{% endfunc %}
+
+{% func (p *LoginPage) Scripts() %}
+<script src="https://www.google.com/recaptcha/api.js?render=xxxx"></script>
+{% endfunc %}

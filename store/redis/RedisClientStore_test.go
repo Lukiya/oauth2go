@@ -19,13 +19,3 @@ func TestRedisClientStore_GetClient(t *testing.T) {
 	client := _clientStore.GetClient("test")
 	assert.NotNil(t, client)
 }
-
-func TestRedisClientStore_GetClients(t *testing.T) {
-	clients := _clientStore.GetClients()
-	assert.NotEmpty(t, clients)
-}
-
-func TestRedisClientStore_Verify(t *testing.T) {
-	client := _clientStore.Verify("test", "xxxxxx")
-	assert.NotNil(t, client)
-}

@@ -1,0 +1,12 @@
+// Main page template. Implements BasePage methods.
+
+{% code
+type IndexPage struct {
+    BasePage
+}
+%}
+
+
+{% func (p *IndexPage) Body() %}
+<h1>Welcome</h1>
+{% endfunc %}
