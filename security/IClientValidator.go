@@ -1,19 +1,29 @@
 package security
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Lukiya/oauth2go/core"
 	"github.com/Lukiya/oauth2go/model"
 	"github.com/Lukiya/oauth2go/store"
+	log "github.com/syncfuture/go/slog"
+	"github.com/syncfuture/go/u"
+	"github.com/valyala/fasthttp"
 )
 
 type IClientValidator interface {
-	ExractClientCredentials() (*model.Credential, error)
+	// ExractClientCredentials extract client credential from request
+	ExractClientCredentials(ctx *fasthttp.RequestCtx) (*model.Credential, error, error)
+	// VerifyClient1 verify client id & secret
 	VerifyClient1(credential *model.Credential) (model.IClient, error, error)
+	// VerifyClient2 verify client id, secret & grant type
 	VerifyClient2(credential *model.Credential, grantType string) (model.IClient, error, error)
+	// VerifyClient3 verify client id, secret, grant type & scopes
 	VerifyClient3(credential *model.Credential, grantType, scopesStr string) (model.IClient, error, error)
+	// VerifyClient4 verify client id & secret, response type, scopes, redirect uri
 	VerifyClient4(clientID, responseType, redirectURI, scopesStr, state string) (model.IClient, error, error)
 }
 
@@ -27,8 +37,78 @@ type DefaultClientValidator struct {
 	ClientStore store.IClientStore
 }
 
-func (x *DefaultClientValidator) ExractClientCredentials() (*model.Credential, error) {
-	return nil, nil
+// ExractClientCredentials extract client credential from request
+func (x *DefaultClientValidator) ExractClientCredentials(ctx *fasthttp.RequestCtx) (r *model.Credential, err, errDesc error) {
+	r, err, errDesc = x.exractClientCredentialsFromHeader(ctx)
+	if err == nil {
+		return
+	}
+
+	r, err, errDesc = x.exractClientCredentialsFromBody(ctx)
+	return
+}
+
+func (x *DefaultClientValidator) exractClientCredentialsFromHeader(ctx *fasthttp.RequestCtx) (r *model.Credential, err, errDesc error) {
+	authorzation := string(ctx.Request.Header.Peek(core.Header_Authorization))
+	if authorzation == "" {
+		err = errors.New(core.Err_invalid_request)
+		errDesc = errors.New("no authorization header")
+		log.Warn(errDesc.Error())
+		return
+	}
+
+	authArray := strings.Split(authorzation, core.Seperator_Scope)
+	if len(authArray) != 2 || authArray[1] == "" {
+		err = errors.New(core.Err_invalid_request)
+		errDesc = errors.New("invalid authorization header format")
+		log.Warn(errDesc.Error())
+		return
+	}
+
+	authBytes, err := base64.URLEncoding.DecodeString(authArray[1])
+	if u.LogError(err) {
+		return
+	}
+	authStr := string(authBytes)
+	authArray = strings.Split(authStr, core.Seperators_Auth)
+
+	if len(authArray) != 2 || authArray[0] == "" || authArray[1] == "" {
+		err = errors.New(core.Err_invalid_request)
+		errDesc = errors.New("invalid authorization header segments length")
+		log.Warn(errDesc.Error())
+		return
+	}
+
+	r = &model.Credential{
+		Username: authArray[0],
+		Password: authArray[1],
+	}
+	return
+}
+
+func (x *DefaultClientValidator) exractClientCredentialsFromBody(ctx *fasthttp.RequestCtx) (r *model.Credential, err error, errDesc error) {
+	id := string(ctx.FormValue(core.Form_ClientID))
+
+	if id == "" {
+		err = errors.New(core.Err_invalid_request)
+		errDesc = errors.New("client id is missing")
+		log.Warn(errDesc.Error())
+		return
+	}
+
+	secret := string(ctx.FormValue(core.Form_ClientSecret))
+	if secret == "" {
+		err = errors.New(core.Err_invalid_request)
+		errDesc = errors.New("client secret is missing")
+		log.Warn(errDesc.Error())
+		return
+	}
+
+	r = &model.Credential{
+		Username: id,
+		Password: secret,
+	}
+	return
 }
 
 // VerifyClient1 verify client id & secret
@@ -36,11 +116,17 @@ func (x *DefaultClientValidator) VerifyClient1(credential *model.Credential) (mo
 	client := x.ClientStore.GetClient(credential.Username)
 
 	if client == nil {
-		return nil, errors.New(core.Err_invalid_client), errors.New("client not exists")
+		err := errors.New(core.Err_invalid_client)
+		errDesc := errors.New("client not exists")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
 	}
 
 	if credential.Password != client.GetSecret() {
-		return nil, errors.New(core.Err_invalid_client), errors.New("invalid client")
+		err := errors.New(core.Err_invalid_client)
+		errDesc := errors.New("invalid client")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
 	}
 
 	return client, nil, nil
@@ -50,7 +136,10 @@ func (x *DefaultClientValidator) VerifyClient1(credential *model.Credential) (mo
 // VerifyClient2 verify client id, secret & grant type
 func (x *DefaultClientValidator) VerifyClient2(credential *model.Credential, grantType string) (model.IClient, error, error) {
 	if grantType == "" {
-		return nil, errors.New(core.Err_invalid_request), errors.New("grant type is missing")
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("invalid client")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
 	}
 
 	client, err, errDesc := x.VerifyClient1(credential)
@@ -70,7 +159,10 @@ func (x *DefaultClientValidator) VerifyClient2(credential *model.Credential, gra
 // VerifyClient3 verify client id, secret, grant type & scopes
 func (x *DefaultClientValidator) VerifyClient3(credential *model.Credential, grantType, scopesStr string) (model.IClient, error, error) {
 	if scopesStr == "" {
-		return nil, errors.New(core.Err_invalid_request), errors.New("scope is missing")
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("scope is missing")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
 	}
 
 	client, err, errDesc := x.VerifyClient2(credential, grantType)
@@ -78,7 +170,7 @@ func (x *DefaultClientValidator) VerifyClient3(credential *model.Credential, gra
 		return nil, err, errDesc
 	}
 
-	err, errDesc = x.validateScopes(client, grantType)
+	err, errDesc = x.validateScopes(client, scopesStr)
 	if err != nil {
 		return nil, err, errDesc
 	}
@@ -89,25 +181,40 @@ func (x *DefaultClientValidator) VerifyClient3(credential *model.Credential, gra
 // VerifyClient4 verify client id & secret, response type, scopes, redirect uri
 func (x *DefaultClientValidator) VerifyClient4(clientID, responseType, redirectURI, scopesStr, state string) (model.IClient, error, error) {
 	if clientID == "" {
-		return nil, errors.New(core.Err_invalid_request), errors.New("client id is missing")
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("client id is missing")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
 	}
 
 	if responseType == "" {
-		return nil, errors.New(core.Err_invalid_request), errors.New("response type is missing")
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("response type is missing")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
 	}
 
 	if redirectURI == "" {
-		return nil, errors.New(core.Err_invalid_request), errors.New("redirect uri is missing")
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("redirect uri is missing")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
 	}
 
 	if scopesStr == "" {
-		return nil, errors.New(core.Err_invalid_request), errors.New("scope is missing")
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("scope is missing")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
 	}
 
 	client := x.ClientStore.GetClient(clientID)
 
 	if client == nil {
-		return nil, errors.New(core.Err_invalid_client), errors.New("client not exists")
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("client not exists")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
 	}
 
 	err, errDesc := x.validateRedirectUris(client, redirectURI)
@@ -139,7 +246,10 @@ func (x *DefaultClientValidator) validateGrants(client model.IClient, grantType 
 		}
 	}
 
-	return errors.New(core.Err_unauthorized_client), fmt.Errorf("'%s' grant is not allowed for '%s'", grantType, client.GetID())
+	err := errors.New(core.Err_unauthorized_client)
+	errDesc := fmt.Errorf("'%s' grant is not allowed for '%s'", grantType, client.GetID())
+	log.Warn(errDesc.Error())
+	return err, errDesc
 }
 
 // validateScopes _
@@ -153,7 +263,10 @@ func (x *DefaultClientValidator) validateScopes(client model.IClient, scope stri
 		}
 	}
 
-	return errors.New(core.Err_unauthorized_client), fmt.Errorf("'%s' scope is not allowed for '%s'", scope, client.GetID())
+	err := errors.New(core.Err_unauthorized_client)
+	errDesc := fmt.Errorf("'%s' scope is not allowed for '%s'", scope, client.GetID())
+	log.Warn(errDesc.Error())
+	return err, errDesc
 }
 
 // validateRedirectUris _
@@ -167,7 +280,10 @@ func (x *DefaultClientValidator) validateRedirectUris(client model.IClient, redi
 		}
 	}
 
-	return errors.New(core.Err_unauthorized_client), fmt.Errorf("'%s' redirect uri is not allowed for '%s'", redirectURI, client.GetID())
+	err := errors.New(core.Err_unauthorized_client)
+	errDesc := fmt.Errorf("'%s' redirect uri is is not allowed for '%s'", redirectURI, client.GetID())
+	log.Warn(errDesc.Error())
+	return err, errDesc
 }
 
 func (x *DefaultClientValidator) validateResponseType(client model.IClient, responseType string) (error, error) {
@@ -177,5 +293,8 @@ func (x *DefaultClientValidator) validateResponseType(client model.IClient, resp
 		return x.validateGrants(client, core.GrantType_Implicit)
 	}
 
-	return errors.New(core.Err_unauthorized_client), fmt.Errorf("'%s' response type is not supported for '%s'", responseType, client.GetID())
+	err := errors.New(core.Err_unauthorized_client)
+	errDesc := fmt.Errorf("'%s' response type is is not allowed for '%s'", responseType, client.GetID())
+	log.Warn(errDesc.Error())
+	return err, errDesc
 }

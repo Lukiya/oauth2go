@@ -30,21 +30,26 @@ func main() {
 	tokenStore := redis.NewRedisTokenStore("rt:", secretEncryptor, redisConfig)
 	privateKey, err := rsautil.ReadPrivateKeyFromFile("../cert/test.key")
 	u.LogFaltal(err)
+	claimsGenerator := NewClaimsGenerator()
 
 	authServerOptions := &oauth2go.AuthServerOptions{
-		PkceRequired: true,
-		ClientStore:  clientStore,
-		TokenStore:   tokenStore,
-		PrivateKey:   privateKey,
+		PkceRequired:      true,
+		ClientStore:       clientStore,
+		TokenStore:        tokenStore,
+		PrivateKey:        privateKey,
+		ClaimsGenerator:   claimsGenerator,
+		AuthorizeEndpoint: "/connect/authorize",
+		TokenEndpoint:     "/connect/token",
+		LoginEndpoint:     "/account/login",
 	}
 	authServer := oauth2go.NewDefaultAuthServer(authServerOptions)
 
 	webServer := server.NewWebServer()
-	webServer.Post("/connect/token", authServer.TokenRequestHandler)
-	webServer.Get("/connect/authorize", authServer.AuthorizeRequestHandler)
+	webServer.Get(authServerOptions.AuthorizeEndpoint, authServer.AuthorizeRequestHandler)
+	webServer.Post(authServerOptions.TokenEndpoint, authServer.TokenRequestHandler)
 	webServer.Get("/", func(ctx *fasthttp.RequestCtx) { writePage(ctx, new(views.IndexPage)) })
-	webServer.Get("/account/login", func(ctx *fasthttp.RequestCtx) {
-		username := core.GetCookieValue(ctx, "Username")
+	webServer.Get(authServerOptions.LoginEndpoint, func(ctx *fasthttp.RequestCtx) {
+		username := core.GetCookieValue(ctx, authServerOptions.AuthCookieName)
 		log.Info(username)
 
 		returnURL := string(ctx.FormValue(core.Form_ReturnUrl))
@@ -59,13 +64,7 @@ func main() {
 		// password := string(ctx.FormValue("Password"))
 		returnURL := string(ctx.FormValue(core.Form_ReturnUrl))
 
-		// authCookie := fasthttp.AcquireCookie()
-		// authCookie.SetKey(authServerOptions.AuthCookieName)
-		// authCookie.SetValue(username)
-
-		// ctx.Response.Header.SetCookie(authCookie)
-
-		core.SetCookieValue(ctx, map[string]string{"Username": username})
+		core.SetCookieValue(ctx, authServerOptions.AuthCookieName, username)
 
 		core.Redirect(ctx, returnURL)
 		// writePage(ctx, new(views.LoginPage))

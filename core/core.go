@@ -50,8 +50,8 @@ const (
 	GrantType_Implicit            = "implicit"
 	GrantType_ResourceOwner       = "password"
 	GrantType_RefreshToken        = "refresh_token"
-	Format_Token1                 = "{\"" + Form_AccessToken + "\":\"%s\",\"" + Form_ExpiresIn + "\":\"%s\",\"" + Form_Scope + "\":\"%s\",\"" + Form_TokenType + "\":\"Bearer\"}"
-	Format_Token2                 = "{\"" + Form_AccessToken + "\":\"%s\",\"" + Form_RefreshToken + "\":\"$s\",\"" + Form_ExpiresIn + "\":\"%s\",\"" + Form_Scope + "\":\"%s\",\"" + Form_TokenType + "\":\"Bearer\"}"
+	Format_Token1                 = "{\"" + Form_AccessToken + "\":\"%s\",\"" + Form_ExpiresIn + "\":\"%d\",\"" + Form_Scope + "\":\"%s\",\"" + Form_TokenType + "\":\"" + Form_TokenTypeBearer + "\"}"
+	Format_Token2                 = "{\"" + Form_AccessToken + "\":\"%s\",\"" + Form_RefreshToken + "\":\"%s\",\"" + Form_ExpiresIn + "\":\"%d\",\"" + Form_Scope + "\":\"%s\",\"" + Form_TokenType + "\":\"" + Form_TokenTypeBearer + "\"}"
 	Format_Error                  = "{\"error\":\"%s\", \"error_description\":\"%s\"}"
 	Msg_Success                   = ""
 	Err_invalid_request           = "invalid_request"
@@ -73,7 +73,7 @@ const (
 	Token_ExpiresAt               = "expires_at"
 	UtcTimesamp                   = "yyyy-MM-ddTHH:mm:ss.0000000+00:00"
 	Seperator_Scope               = " "
-	Seperators_Auth               = ";"
+	Seperators_Auth               = ":"
 )
 
 var (
@@ -132,21 +132,25 @@ func Redirect(ctx *fasthttp.RequestCtx, url string) {
 }
 
 func GetCookieValue(ctx *fasthttp.RequestCtx, key string) string {
-	encryptedCookie := string(ctx.Request.Header.Cookie("OAuth"))
-	var r map[string]string
-	err := _secureCookie.Decode("OAuth", encryptedCookie, &r)
+	encryptedCookie := string(ctx.Request.Header.Cookie(key))
+	if encryptedCookie == "" {
+		return ""
+	}
+
+	var r string
+	err := _secureCookie.Decode(key, encryptedCookie, &r)
 
 	if u.LogError(err) {
 		return ""
 	}
 
-	return r[key]
+	return r
 }
 
-func SetCookieValue(ctx *fasthttp.RequestCtx, kv map[string]string) {
-	if encryptedCookie, err := _secureCookie.Encode("OAuth", kv); err == nil {
+func SetCookieValue(ctx *fasthttp.RequestCtx, key, value string) {
+	if encryptedCookie, err := _secureCookie.Encode(key, value); err == nil {
 		authCookie := fasthttp.AcquireCookie()
-		authCookie.SetKey("OAuth")
+		authCookie.SetKey(key)
 		authCookie.SetValue(encryptedCookie)
 		authCookie.SetSecure(true)
 		authCookie.SetPath("/")
