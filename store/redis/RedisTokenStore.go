@@ -25,7 +25,7 @@ func NewRedisTokenStore(prefix string, secretEncryptor security.ISecretEncryptor
 		RedisClient:     sredis.NewClient(config),
 	}
 }
-func (x *RedisTokenStore) SaveRefreshToken(refreshToken string, requestInfo *model.TokenRequestInfo, expireSeconds int) {
+func (x *RedisTokenStore) SaveRefreshToken(refreshToken string, requestInfo *model.TokenRequestInfo, expireSeconds int32) {
 	// serialize to json
 	bytes, err := json.Marshal(requestInfo)
 	if u.LogError(err) {

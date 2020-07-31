@@ -27,6 +27,10 @@ type DefaultAuthorizationCodeStore struct {
 	duration time.Duration
 }
 
+// Save save request info to memory.
+// This default in memory store doesn't encrypt request info.
+// Encryption is an option for security enhancement,
+// you can implement your own store to do this.
 func (x *DefaultAuthorizationCodeStore) Save(code string, requestInfo *model.TokenRequestInfo) {
 	x.cache.Add(code, x.duration, requestInfo)
 }

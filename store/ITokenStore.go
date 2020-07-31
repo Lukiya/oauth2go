@@ -5,6 +5,6 @@ import (
 )
 
 type ITokenStore interface {
-	SaveRefreshToken(refreshToken string, requestInfo *model.TokenRequestInfo, expireSeconds int)
+	SaveRefreshToken(refreshToken string, requestInfo *model.TokenRequestInfo, expireSeconds int32)
 	GetTokenRequestInfo(refreshToken string) *model.TokenRequestInfo
 }

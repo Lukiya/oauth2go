@@ -65,7 +65,7 @@ func (x *DefaultClientValidator) exractClientCredentialsFromHeader(ctx *fasthttp
 		return
 	}
 
-	authBytes, err := base64.URLEncoding.DecodeString(authArray[1])
+	authBytes, err := base64.StdEncoding.DecodeString(authArray[1]) // has padding, do not use RawURLEncoding
 	if u.LogError(err) {
 		return
 	}

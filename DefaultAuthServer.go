@@ -29,6 +29,7 @@ type AuthServerOptions struct {
 	TokenStore             store.ITokenStore
 	AuthorizationCodeStore store.IAuthorizationCodeStore
 	ClientValidator        security.IClientValidator
+	PkceValidator          security.IPkceValidator
 	AuthCodeGenerator      token.IAuthCodeGenerator
 	TokenGenerator         token.ITokenGenerator
 	ClaimsGenerator        token.ITokenClaimsGenerator
@@ -61,13 +62,16 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	}
 
 	if options.AuthorizationCodeStore == nil {
-		options.AuthorizationCodeStore = store.NewDefaultAuthorizationCodeStore(60)
+		options.AuthorizationCodeStore = store.NewDefaultAuthorizationCodeStore(180)
 	}
 	if options.ClientValidator == nil {
 		options.ClientValidator = security.NewDefaultClientValidator(options.ClientStore)
 	}
 	if options.AuthCodeGenerator == nil {
 		options.AuthCodeGenerator = token.NewDefaultAuthCodeGenerator()
+	}
+	if options.PkceValidator == nil {
+		options.PkceValidator = security.NewDefaultPkceValidator()
 	}
 	if options.TokenGenerator == nil {
 		options.TokenGenerator = token.NewDefaultTokenGenerator(
@@ -89,6 +93,7 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 		ClientValidator:        options.ClientValidator,
 		AuthCodeGenerator:      options.AuthCodeGenerator,
 		TokenGenerator:         options.TokenGenerator,
+		PkceValidator:          options.PkceValidator,
 	}
 }
 
@@ -102,6 +107,7 @@ type DefaultAuthServer struct {
 	TokenStore             store.ITokenStore
 	AuthorizationCodeStore store.IAuthorizationCodeStore
 	ClientValidator        security.IClientValidator
+	PkceValidator          security.IPkceValidator
 	AuthCodeGenerator      token.IAuthCodeGenerator
 	TokenGenerator         token.ITokenGenerator
 }
@@ -123,39 +129,36 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 		state,
 	)
 	if err != nil {
+		log.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
 
-	switch respType {
-	case core.ResponseType_Code:
-	}
-
-	switch respType {
-	case core.ResponseType_Code:
-		x.AuthorizationCodeRequestHandler(ctx, client, respType, scopesStr, redirectURI, state)
-	case core.ResponseType_Token:
-		x.ImplicitTokenRequestHandler(ctx, client, respType, scopesStr, redirectURI, state)
-	}
-}
-
-// AuthorizationCodeRequestHandler handle authorize code request
-func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state string) {
-	username := core.GetCookieValue(ctx, "Username")
+	username := core.GetCookieValue(ctx, x.AuthCookieName)
 	if username == "" {
 		// redirect to login page
-		returnURL := core.MakeURLStr(x.AuthorizeEndpoint, &map[string]string{
+		a := core.MakeURLStr(x.AuthorizeEndpoint, &map[string]string{
 			core.Form_ClientID:     client.GetID(),
 			core.Form_RedirectUri:  redirectURI,
 			core.Form_ResponseType: respType,
 			core.Form_Scope:        scopesStr,
 			core.Form_State:        state,
 		})
-		targetURL := core.MakeURLStr(x.LoginEndpoint, &map[string]string{core.Form_ReturnUrl: returnURL})
+		targetURL := core.MakeURLStr(x.LoginEndpoint, &map[string]string{core.Form_ReturnUrl: a})
 		core.Redirect(ctx, targetURL)
 		return
 	}
 
+	switch respType {
+	case core.ResponseType_Code:
+		x.AuthorizationCodeRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
+	case core.ResponseType_Token:
+		x.ImplicitTokenRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
+	}
+}
+
+// AuthorizationCodeRequestHandler handle authorize code request
+func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
 	var code string
 	// pkce check
 	if !x.PkceRequired {
@@ -204,10 +207,12 @@ func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.Reques
 	x.AuthorizationCodeStore.Save(
 		code,
 		&model.TokenRequestInfo{
-			ClientID:    client.GetID(),
-			Scopes:      scopesStr,
-			RedirectUri: redirectURI,
-			Username:    username,
+			ClientID:             client.GetID(),
+			Scopes:               scopesStr,
+			RedirectUri:          redirectURI,
+			Username:             username,
+			CodeChanllenge:       codeChanllenge,
+			CodeChanllengeMethod: codeChanllengeMethod,
 		},
 	)
 
@@ -226,24 +231,9 @@ func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.Reques
 }
 
 // AuthorizationCodeRequestHandler handle implicit token request
-func (x *DefaultAuthServer) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state string) {
-	username := core.GetCookieValue(ctx, x.AuthCookieName)
-	if username == "" {
-		// redirect to login page
-		a := core.MakeURLStr(x.AuthorizeEndpoint, &map[string]string{
-			core.Form_ClientID:     client.GetID(),
-			core.Form_RedirectUri:  redirectURI,
-			core.Form_ResponseType: respType,
-			core.Form_Scope:        scopesStr,
-			core.Form_State:        state,
-		})
-		targetURL := core.MakeURLStr(x.LoginEndpoint, &map[string]string{core.Form_ReturnUrl: a})
-		core.Redirect(ctx, targetURL)
-		return
-	}
-
+func (x *DefaultAuthServer) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
 	// user already logged in, issue token
-	accessToken, err := x.TokenGenerator.GenerateAccessToken(
+	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,
 		core.GrantType_Implicit,
 		client,
@@ -258,7 +248,7 @@ func (x *DefaultAuthServer) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx
 	targetURL := fmt.Sprintf("%s?%s=%s&%s=%s&%s=%d&%s=%s&%s=%s",
 		redirectURI,
 		core.Form_AccessToken,
-		accessToken,
+		token,
 		core.Form_TokenType,
 		core.Form_TokenTypeBearer,
 		core.Form_ExpiresIn,
@@ -280,6 +270,7 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 
 	credentials, err, errDesc := x.ClientValidator.ExractClientCredentials(ctx)
 	if err != nil {
+		log.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
@@ -309,8 +300,11 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	case core.GrantType_Client:
 		x.HandleClientCredentialsTokenRequest(ctx, client, scopesStr)
 	case core.GrantType_AuthorizationCode:
+		x.HandleAuthorizationCodeTokenRequest(ctx, client)
 	case core.GrantType_ResourceOwner:
+		x.HandleResourceOwnerTokenRequest(ctx, client, scopesStr)
 	case core.GrantType_RefreshToken:
+		x.HandleRefreshTokenRequest(ctx, client)
 	default:
 		x.writeError(ctx, http.StatusBadRequest, errors.New(core.Err_unsupported_grant_type), nil)
 	}
@@ -336,6 +330,62 @@ func (x *DefaultAuthServer) HandleClientCredentialsTokenRequest(ctx *fasthttp.Re
 
 // HandleAuthorizationCodeTokenRequest handle authorization code token request
 func (x *DefaultAuthServer) HandleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
+	// exchange token by using auhorization code
+	code := string(ctx.FormValue(core.Form_Code))
+	clientID := string(ctx.FormValue(core.Form_ClientID))
+	redirectUri := string(ctx.FormValue(core.Form_RedirectUri))
+
+	tokenRequestInfo := x.AuthorizationCodeStore.GetThenRemove(code)
+	if tokenRequestInfo == nil {
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("invalid authorization code")
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+
+	if client.GetID() != clientID || clientID != tokenRequestInfo.ClientID {
+		err := errors.New(core.Err_invalid_request)
+		errDesc := fmt.Errorf("client id doesn't match, original: '%s', current: '%s'", tokenRequestInfo.ClientID, client.GetID())
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+
+	if redirectUri != tokenRequestInfo.RedirectUri {
+		err := errors.New(core.Err_invalid_request)
+		errDesc := fmt.Errorf("redirect uri doesn't match, original: '%s', current: '%s'", tokenRequestInfo.RedirectUri, redirectUri)
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+
+	// pkce check
+	if !x.PkceRequired {
+		// issue token
+		x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, tokenRequestInfo)
+		return
+	}
+
+	codeVierifier := string(ctx.FormValue(core.Form_CodeVerifier))
+	if codeVierifier == "" {
+		// client didn't provide code verifier, write error
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("code verifier is missing")
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+
+	if !x.PkceValidator.Verify(codeVierifier, tokenRequestInfo.CodeChanllenge, tokenRequestInfo.CodeChanllengeMethod) {
+		err := errors.New(core.Err_invalid_grant)
+		errDesc := errors.New("code verifier is invalid")
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+
+	// issue token
+	x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, tokenRequestInfo)
 }
 
 // HandleResourceOwnerTokenRequest handle resource owner token request
@@ -344,6 +394,39 @@ func (x *DefaultAuthServer) HandleResourceOwnerTokenRequest(ctx *fasthttp.Reques
 
 // HandleRefreshTokenRequest handle refresh token request
 func (x *DefaultAuthServer) HandleRefreshTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
+}
+
+// issueTokenByRequestInfo issue access token and refresh token
+func (x *DefaultAuthServer) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, tokenRequestInfo *model.TokenRequestInfo) {
+	// issue token
+	token, err := x.TokenGenerator.GenerateAccessToken(
+		ctx,
+		grantType,
+		client,
+		strings.Split(tokenRequestInfo.Scopes, core.Seperator_Scope),
+		tokenRequestInfo.Username,
+	)
+	if err != nil {
+		x.writeError(ctx, http.StatusBadRequest, errors.New(core.Err_server_error), err)
+		return
+	}
+
+	allowRefresh := false
+	for _, grant := range client.GetGrants() {
+		if grant == core.GrantType_RefreshToken {
+			allowRefresh = true
+			break
+		}
+	}
+	if allowRefresh {
+		// allowed to use refresh token
+		var refreshToken = x.TokenGenerator.GenerateRefreshToken()
+		x.TokenStore.SaveRefreshToken(refreshToken, tokenRequestInfo, client.GetAccessTokenExpireSeconds())
+		x.writeToken(ctx, token, tokenRequestInfo.Scopes, client.GetAccessTokenExpireSeconds(), refreshToken)
+	} else {
+		// not allowed to use refresh token
+		x.writeToken(ctx, token, tokenRequestInfo.Scopes, client.GetAccessTokenExpireSeconds(), "")
+	}
 }
 
 // WriteTokenHandler

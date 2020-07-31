@@ -7,6 +7,11 @@ import (
 type IPkceValidator interface {
 	Verify(codeVerifier, codeChanllenge, codeChanllengeMethod string) bool
 }
+
+func NewDefaultPkceValidator() IPkceValidator {
+	return &DefaultPkceValidator{}
+}
+
 type DefaultPkceValidator struct{}
 
 func (x *DefaultPkceValidator) Verify(codeVerifier, codeChanllenge, codeChanllengeMethod string) bool {

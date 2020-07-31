@@ -93,7 +93,7 @@ func ToSHA256Base64URL(in string) string {
 	h.Write([]byte(in))
 	r := h.Sum(nil)
 
-	return base64.URLEncoding.EncodeToString(r)
+	return base64.RawURLEncoding.EncodeToString(r)
 }
 
 func MakeURL(rawurl string, queries *map[string]string) *url.URL {

@@ -48,5 +48,5 @@ func (x *DefaultTokenGenerator) GenerateRefreshToken() string {
 	randomNumber := make([]byte, 64)
 	rand.Read(randomNumber)
 
-	return base64.URLEncoding.EncodeToString(randomNumber)
+	return base64.RawURLEncoding.EncodeToString(randomNumber)
 }
