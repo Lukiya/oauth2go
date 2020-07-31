@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"net/url"
 
 	"github.com/gorilla/securecookie"
 	"github.com/sony/sonyflake"
@@ -96,29 +95,29 @@ func ToSHA256Base64URL(in string) string {
 	return base64.RawURLEncoding.EncodeToString(r)
 }
 
-func MakeURL(rawurl string, queries *map[string]string) *url.URL {
-	r, err := url.Parse(rawurl)
-	if u.LogError(err) {
-		return nil
-	}
-	if queries != nil && len(*queries) > 0 {
-		q := r.Query()
-		for k, v := range *queries {
-			q.Add(k, v)
-		}
-		r.RawQuery = q.Encode()
-	}
+// func MakeURL(rawurl string, queries *map[string]string) *url.URL {
+// 	r, err := url.Parse(rawurl)
+// 	if u.LogError(err) {
+// 		return nil
+// 	}
+// 	if queries != nil && len(*queries) > 0 {
+// 		q := r.Query()
+// 		for k, v := range *queries {
+// 			q.Add(k, v)
+// 		}
+// 		r.RawQuery = q.Encode()
+// 	}
 
-	return r
-}
+// 	return r
+// }
 
-func MakeURLStr(rawurl string, queries *map[string]string) string {
-	r := MakeURL(rawurl, queries)
-	if r != nil {
-		return r.String()
-	}
-	return ""
-}
+// func MakeURLStr(rawurl string, queries *map[string]string) string {
+// 	r := MakeURL(rawurl, queries)
+// 	if r != nil {
+// 		return r.String()
+// 	}
+// 	return ""
+// }
 
 // GenerateID _
 func GenerateID() string {

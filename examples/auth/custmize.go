@@ -6,12 +6,13 @@ import (
 
 	"github.com/Lukiya/oauth2go/core"
 	"github.com/Lukiya/oauth2go/model"
+	"github.com/Lukiya/oauth2go/security"
 	"github.com/Lukiya/oauth2go/token"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/valyala/fasthttp"
 )
 
-func NewClaimsGenerator() token.ITokenClaimsGenerator {
+func newClaimsGenerator() token.ITokenClaimsGenerator {
 	return &MyClaimsGenerator{}
 }
 
@@ -31,4 +32,14 @@ func (x *MyClaimsGenerator) Generate(ctx *fasthttp.RequestCtx, grantType string,
 	}
 
 	return r
+}
+
+func newResourceOwnerValidator() security.IResourceOwnerValidator {
+	return &MyResourceOwnerValidator{}
+}
+
+type MyResourceOwnerValidator struct{}
+
+func (x *MyResourceOwnerValidator) Verify(username, password string) bool {
+	return username == password // just for testing
 }

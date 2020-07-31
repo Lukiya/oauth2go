@@ -11,10 +11,10 @@ func TestRSASecretEncryptor(t *testing.T) {
 
 	raw := "xxxxxx"
 
-	encrypted := a.EncryptString(raw)
+	encrypted := a.EncryptStringToString(raw)
 	assert.NotEmpty(t, encrypted)
 	t.Log(encrypted)
 
-	decrypted := a.DecryptString(encrypted)
+	decrypted := a.DecryptStringToString(encrypted)
 	assert.Equal(t, raw, decrypted)
 }

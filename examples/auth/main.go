@@ -30,17 +30,20 @@ func main() {
 	tokenStore := redis.NewRedisTokenStore("rt:", secretEncryptor, redisConfig)
 	privateKey, err := rsautil.ReadPrivateKeyFromFile("../cert/test.key")
 	u.LogFaltal(err)
-	claimsGenerator := NewClaimsGenerator()
+	claimsGenerator := newClaimsGenerator()
+
+	resourceOwnerValidator := newResourceOwnerValidator()
 
 	authServerOptions := &oauth2go.AuthServerOptions{
-		PkceRequired:      true,
-		ClientStore:       clientStore,
-		TokenStore:        tokenStore,
-		PrivateKey:        privateKey,
-		ClaimsGenerator:   claimsGenerator,
-		AuthorizeEndpoint: "/connect/authorize",
-		TokenEndpoint:     "/connect/token",
-		LoginEndpoint:     "/account/login",
+		PkceRequired:           true,
+		ClientStore:            clientStore,
+		TokenStore:             tokenStore,
+		PrivateKey:             privateKey,
+		ClaimsGenerator:        claimsGenerator,
+		ResourceOwnerValidator: resourceOwnerValidator,
+		AuthorizeEndpoint:      "/connect/authorize",
+		TokenEndpoint:          "/connect/token",
+		LoginEndpoint:          "/account/login",
 	}
 	authServer := oauth2go.NewDefaultAuthServer(authServerOptions)
 
@@ -49,30 +52,29 @@ func main() {
 	webServer.Post(authServerOptions.TokenEndpoint, authServer.TokenRequestHandler)
 	webServer.Get("/", func(ctx *fasthttp.RequestCtx) { writePage(ctx, new(views.IndexPage)) })
 	webServer.Get(authServerOptions.LoginEndpoint, func(ctx *fasthttp.RequestCtx) {
-		username := core.GetCookieValue(ctx, authServerOptions.AuthCookieName)
-		log.Info(username)
-
 		returnURL := string(ctx.FormValue(core.Form_ReturnUrl))
 		view := &views.LoginPage{
 			ReturnURL: url.QueryEscape(returnURL),
 		}
 		writePage(ctx, view)
 	})
-	webServer.Post("/account/login", func(ctx *fasthttp.RequestCtx) {
-
+	webServer.Post(authServerOptions.LoginEndpoint, func(ctx *fasthttp.RequestCtx) {
 		username := string(ctx.FormValue("Username"))
-		// password := string(ctx.FormValue("Password"))
+		password := string(ctx.FormValue("Password"))
 		returnURL := string(ctx.FormValue(core.Form_ReturnUrl))
 
-		core.SetCookieValue(ctx, authServerOptions.AuthCookieName, username)
+		if username != password { // consider credential validation is passed, just for testing
+			core.SetCookieValue(ctx, authServerOptions.AuthCookieName, username) // set login cookie
+			core.Redirect(ctx, returnURL)
+			return
+		}
 
-		core.Redirect(ctx, returnURL)
-		// writePage(ctx, new(views.LoginPage))
+		writePage(ctx, new(views.LoginPage))
 	})
-	webServer.Get("/account/logout", func(ctx *fasthttp.RequestCtx) {})
+	webServer.Get(authServerOptions.LogoutEndpoint, func(ctx *fasthttp.RequestCtx) {})
 	webServer.ServeFiles(fasthttp.FSHandler("./wwwroot", 0))
 
-	listenAddr := ":6001"
+	listenAddr := cfp.GetString("ListenAddr")
 	log.Infof("listen on %s", listenAddr)
 	fasthttp.ListenAndServe(listenAddr, webServer.Serve)
 }

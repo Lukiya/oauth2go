@@ -1,6 +1,8 @@
 package rsa
 
 import (
+	"encoding/base64"
+
 	"github.com/Lukiya/oauth2go/security"
 	ss "github.com/syncfuture/go/security"
 	"github.com/syncfuture/go/u"
@@ -19,7 +21,7 @@ func NewRSASecretEncryptor(certPath string) security.ISecretEncryptor {
 	}
 }
 
-func (x *RSASecretEncryptor) EncryptString(input string) string {
+func (x *RSASecretEncryptor) EncryptStringToString(input string) string {
 	r, err := x.encryptor.EncryptString(input)
 	if u.LogError(err) {
 		return input
@@ -28,7 +30,16 @@ func (x *RSASecretEncryptor) EncryptString(input string) string {
 	return r
 }
 
-func (x *RSASecretEncryptor) EncryptBytes(input []byte) []byte {
+func (x *RSASecretEncryptor) EncryptBytesToString(input []byte) string {
+	r, err := x.encryptor.Encrypt(input)
+	if u.LogError(err) {
+		return base64.StdEncoding.EncodeToString(input)
+	}
+
+	return base64.StdEncoding.EncodeToString(r)
+}
+
+func (x *RSASecretEncryptor) EncryptBytesToBytes(input []byte) []byte {
 	r, err := x.encryptor.Encrypt(input)
 	if u.LogError(err) {
 		return input
@@ -37,7 +48,7 @@ func (x *RSASecretEncryptor) EncryptBytes(input []byte) []byte {
 	return r
 }
 
-func (x *RSASecretEncryptor) DecryptString(input string) string {
+func (x *RSASecretEncryptor) DecryptStringToString(input string) string {
 	r, err := x.encryptor.DecryptString(input)
 	if u.LogError(err) {
 		return input
@@ -46,10 +57,24 @@ func (x *RSASecretEncryptor) DecryptString(input string) string {
 	return r
 }
 
-func (x *RSASecretEncryptor) DecryptBytes(input []byte) []byte {
+func (x *RSASecretEncryptor) DecryptBytesToBytes(input []byte) []byte {
 	r, err := x.encryptor.Decrypt(input)
 	if u.LogError(err) {
 		return input
+	}
+
+	return r
+}
+
+func (x *RSASecretEncryptor) DecryptStringToBytes(input string) []byte {
+	bytes, err := base64.StdEncoding.DecodeString(input)
+	if u.LogError(err) {
+		return []byte(input)
+	}
+
+	r, err := x.encryptor.Decrypt(bytes)
+	if u.LogError(err) {
+		return []byte(input)
 	}
 
 	return r

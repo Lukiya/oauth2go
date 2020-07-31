@@ -37,7 +37,7 @@ func (x *RedisClientStore) GetClient(clientID string) model.IClient {
 		return nil
 	}
 
-	client.Secret = x.SecretEncryptor.DecryptString(client.Secret)
+	client.Secret = x.SecretEncryptor.DecryptStringToString(client.Secret)
 
 	return client
 }
@@ -56,7 +56,7 @@ func (x *RedisClientStore) GetClients() map[string]model.IClient {
 		if u.LogError(err) {
 			return nil
 		}
-		client.Secret = x.SecretEncryptor.DecryptString(client.Secret)
+		client.Secret = x.SecretEncryptor.DecryptStringToString(client.Secret)
 		r[k] = client
 	}
 

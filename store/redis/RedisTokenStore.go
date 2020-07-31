@@ -33,22 +33,22 @@ func (x *RedisTokenStore) SaveRefreshToken(refreshToken string, requestInfo *mod
 	}
 
 	// encrypt
-	bytes = x.SecretEncryptor.EncryptBytes(bytes)
+	enchoded := x.SecretEncryptor.EncryptBytesToString(bytes)
 
 	// save to redis
-	x.RedisClient.Set(x.Prefix+refreshToken, bytes, time.Second*time.Duration(expireSeconds))
+	x.RedisClient.Set(x.Prefix+refreshToken, enchoded, time.Second*time.Duration(expireSeconds))
 }
 func (x *RedisTokenStore) GetTokenRequestInfo(refreshToken string) *model.TokenRequestInfo {
 	key := x.Prefix + refreshToken
 
 	// get from redis
-	bytes, err := x.RedisClient.Get(key).Bytes()
+	str, err := x.RedisClient.Get(key).Result()
 	if u.LogError(err) {
 		return nil
 	}
 
 	// decrypt & deserialize json
-	bytes = x.SecretEncryptor.DecryptBytes(bytes)
+	bytes := x.SecretEncryptor.DecryptStringToBytes(str)
 	var info *model.TokenRequestInfo
 	err = json.Unmarshal(bytes, &info)
 	if u.LogError(err) {

@@ -23,6 +23,7 @@ type AuthServerOptions struct {
 	AuthorizeEndpoint      string
 	TokenEndpoint          string
 	LoginEndpoint          string
+	LogoutEndpoint         string
 	PkceRequired           bool
 	PrivateKey             *rsa.PrivateKey
 	ClientStore            store.IClientStore
@@ -30,6 +31,7 @@ type AuthServerOptions struct {
 	AuthorizationCodeStore store.IAuthorizationCodeStore
 	ClientValidator        security.IClientValidator
 	PkceValidator          security.IPkceValidator
+	ResourceOwnerValidator security.IResourceOwnerValidator
 	AuthCodeGenerator      token.IAuthCodeGenerator
 	TokenGenerator         token.ITokenGenerator
 	ClaimsGenerator        token.ITokenClaimsGenerator
@@ -80,17 +82,22 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 			options.ClaimsGenerator,
 		)
 	}
+	if options.ResourceOwnerValidator == nil {
+		options.ResourceOwnerValidator = security.NewDefaultResourceOwnerValidator()
+	}
 
 	return &DefaultAuthServer{
 		AuthCookieName:         options.AuthCookieName,
 		AuthorizeEndpoint:      options.AuthorizeEndpoint,
 		TokenEndpoint:          options.TokenEndpoint,
 		LoginEndpoint:          options.LoginEndpoint,
+		LogoutEndpoint:         options.LogoutEndpoint,
 		PkceRequired:           options.PkceRequired,
 		ClientStore:            options.ClientStore,
 		TokenStore:             options.TokenStore,
 		AuthorizationCodeStore: options.AuthorizationCodeStore,
 		ClientValidator:        options.ClientValidator,
+		ResourceOwnerValidator: options.ResourceOwnerValidator,
 		AuthCodeGenerator:      options.AuthCodeGenerator,
 		TokenGenerator:         options.TokenGenerator,
 		PkceValidator:          options.PkceValidator,
@@ -102,12 +109,14 @@ type DefaultAuthServer struct {
 	AuthorizeEndpoint      string
 	TokenEndpoint          string
 	LoginEndpoint          string
+	LogoutEndpoint         string
 	PkceRequired           bool
 	ClientStore            store.IClientStore
 	TokenStore             store.ITokenStore
 	AuthorizationCodeStore store.IAuthorizationCodeStore
 	ClientValidator        security.IClientValidator
 	PkceValidator          security.IPkceValidator
+	ResourceOwnerValidator security.IResourceOwnerValidator
 	AuthCodeGenerator      token.IAuthCodeGenerator
 	TokenGenerator         token.ITokenGenerator
 }
@@ -129,22 +138,14 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 		state,
 	)
 	if err != nil {
-		log.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
 
 	username := core.GetCookieValue(ctx, x.AuthCookieName)
 	if username == "" {
-		// redirect to login page
-		a := core.MakeURLStr(x.AuthorizeEndpoint, &map[string]string{
-			core.Form_ClientID:     client.GetID(),
-			core.Form_RedirectUri:  redirectURI,
-			core.Form_ResponseType: respType,
-			core.Form_Scope:        scopesStr,
-			core.Form_State:        state,
-		})
-		targetURL := core.MakeURLStr(x.LoginEndpoint, &map[string]string{core.Form_ReturnUrl: a})
+		returnURL := url.QueryEscape(string(ctx.URI().RequestURI()))
+		targetURL := fmt.Sprintf("%s?%s=%s", x.LoginEndpoint, core.Form_ReturnUrl, returnURL)
 		core.Redirect(ctx, targetURL)
 		return
 	}
@@ -189,7 +190,10 @@ func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.Reques
 
 	if codeChanllenge == "" {
 		// client didn't provide pkce chanllenge, write error
-		x.writeError(ctx, http.StatusBadRequest, errors.New(core.Err_invalid_request), errors.New("code chanllenge is required"))
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("code chanllenge is required")
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
 
@@ -198,7 +202,10 @@ func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.Reques
 	if codeChanllengeMethod == "" {
 		codeChanllengeMethod = core.Pkce_Plain
 	} else if codeChanllengeMethod != core.Pkce_Plain && codeChanllengeMethod != core.Pkce_S256 {
-		x.writeError(ctx, http.StatusBadRequest, errors.New(core.Err_invalid_request), errors.New("transform algorithm not supported"))
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("transform algorithm not supported")
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
 
@@ -270,7 +277,6 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 
 	credentials, err, errDesc := x.ClientValidator.ExractClientCredentials(ctx)
 	if err != nil {
-		log.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
@@ -306,6 +312,7 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	case core.GrantType_RefreshToken:
 		x.HandleRefreshTokenRequest(ctx, client)
 	default:
+		log.Warn(core.Err_unsupported_grant_type + ":" + grantTypeStr)
 		x.writeError(ctx, http.StatusBadRequest, errors.New(core.Err_unsupported_grant_type), nil)
 	}
 }
@@ -372,6 +379,7 @@ func (x *DefaultAuthServer) HandleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 		// client didn't provide code verifier, write error
 		err := errors.New(core.Err_invalid_request)
 		errDesc := errors.New("code verifier is missing")
+		log.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
@@ -390,10 +398,55 @@ func (x *DefaultAuthServer) HandleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 
 // HandleResourceOwnerTokenRequest handle resource owner token request
 func (x *DefaultAuthServer) HandleResourceOwnerTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
+	// verify username & password
+	username := string(ctx.FormValue(core.Form_Username))
+	password := string(ctx.FormValue(core.Form_Password))
+	success := x.ResourceOwnerValidator.Verify(username, password)
+	if success {
+		// pass, issue token
+		x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, &model.TokenRequestInfo{
+			ClientID: client.GetID(),
+			Scopes:   scopesStr,
+			Username: username,
+		})
+	} else {
+		err := errors.New(core.Err_invalid_grant)
+		errDesc := errors.New("username password doesn't match")
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+	}
 }
 
 // HandleRefreshTokenRequest handle refresh token request
 func (x *DefaultAuthServer) HandleRefreshTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
+	refreshToken := string(ctx.FormValue(core.Form_RefreshToken))
+	if refreshToken == "" {
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("refresh token is missing")
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+
+	var tokenRequestInfo = x.TokenStore.GetTokenRequestInfo(refreshToken)
+	if tokenRequestInfo == nil {
+		err := errors.New(core.Err_invalid_grant)
+		errDesc := errors.New("refresh token is invalid or expired or revoked")
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+
+	if client.GetID() != tokenRequestInfo.ClientID {
+		err := errors.New(core.Err_invalid_request)
+		errDesc := fmt.Errorf("client id doesn't match, original: '%s', current: '%s'", tokenRequestInfo.ClientID, client.GetID())
+		log.Warn(errDesc.Error())
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+
+	// issue token
+	x.issueTokenByRequestInfo(ctx, core.GrantType_RefreshToken, client, tokenRequestInfo)
 }
 
 // issueTokenByRequestInfo issue access token and refresh token
@@ -421,7 +474,7 @@ func (x *DefaultAuthServer) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, gr
 	if allowRefresh {
 		// allowed to use refresh token
 		var refreshToken = x.TokenGenerator.GenerateRefreshToken()
-		x.TokenStore.SaveRefreshToken(refreshToken, tokenRequestInfo, client.GetAccessTokenExpireSeconds())
+		x.TokenStore.SaveRefreshToken(refreshToken, tokenRequestInfo, client.GetRefreshTokenExpireSeconds())
 		x.writeToken(ctx, token, tokenRequestInfo.Scopes, client.GetAccessTokenExpireSeconds(), refreshToken)
 	} else {
 		// not allowed to use refresh token

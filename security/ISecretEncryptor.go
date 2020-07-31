@@ -1,9 +1,11 @@
 package security
 
 type ISecretEncryptor interface {
-	EncryptString(input string) string
-	DecryptString(input string) string
+	EncryptStringToString(input string) string
+	EncryptBytesToBytes(input []byte) []byte
+	EncryptBytesToString(input []byte) string
 
-	EncryptBytes(input []byte) []byte
-	DecryptBytes(input []byte) []byte
+	DecryptStringToString(input string) string
+	DecryptBytesToBytes(input []byte) []byte
+	DecryptStringToBytes(input string) []byte
 }
