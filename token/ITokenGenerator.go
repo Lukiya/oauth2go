@@ -1,9 +1,7 @@
 package token
 
 import (
-	"crypto/rand"
 	"crypto/rsa"
-	"encoding/base64"
 
 	"github.com/Lukiya/oauth2go/model"
 	"github.com/dgrijalva/jwt-go"
@@ -45,8 +43,5 @@ func (x *DefaultTokenGenerator) GenerateAccessToken(ctx *fasthttp.RequestCtx, gr
 }
 
 func (x *DefaultTokenGenerator) GenerateRefreshToken() string {
-	randomNumber := make([]byte, 64)
-	rand.Read(randomNumber)
-
-	return base64.RawURLEncoding.EncodeToString(randomNumber)
+	return generate()
 }

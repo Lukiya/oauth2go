@@ -63,7 +63,7 @@ func main() {
 		password := string(ctx.FormValue("Password"))
 		returnURL := string(ctx.FormValue(core.Form_ReturnUrl))
 
-		if username != password { // consider credential validation is passed, just for testing
+		if username != password { // just for testing
 			core.SetCookieValue(ctx, authServerOptions.AuthCookieName, username) // set login cookie
 			core.Redirect(ctx, returnURL)
 			return

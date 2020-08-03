@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"sync"
 
 	"github.com/gorilla/securecookie"
 	"github.com/sony/sonyflake"
@@ -78,6 +79,12 @@ const (
 var (
 	_idGenerator  *sonyflake.Sonyflake
 	_secureCookie *securecookie.SecureCookie
+	_bytesPool    = &sync.Pool{
+		New: func() interface{} {
+			mem := make([]byte, 1024)
+			return &mem
+		},
+	}
 )
 
 func init() {
@@ -94,30 +101,6 @@ func ToSHA256Base64URL(in string) string {
 
 	return base64.RawURLEncoding.EncodeToString(r)
 }
-
-// func MakeURL(rawurl string, queries *map[string]string) *url.URL {
-// 	r, err := url.Parse(rawurl)
-// 	if u.LogError(err) {
-// 		return nil
-// 	}
-// 	if queries != nil && len(*queries) > 0 {
-// 		q := r.Query()
-// 		for k, v := range *queries {
-// 			q.Add(k, v)
-// 		}
-// 		r.RawQuery = q.Encode()
-// 	}
-
-// 	return r
-// }
-
-// func MakeURLStr(rawurl string, queries *map[string]string) string {
-// 	r := MakeURL(rawurl, queries)
-// 	if r != nil {
-// 		return r.String()
-// 	}
-// 	return ""
-// }
 
 // GenerateID _
 func GenerateID() string {
@@ -158,4 +141,12 @@ func SetCookieValue(ctx *fasthttp.RequestCtx, key, value string) {
 	} else {
 		u.LogError(err)
 	}
+}
+
+func AcquireBytes() *[]byte {
+	return _bytesPool.Get().(*[]byte)
+}
+
+func ReleaseBytes(obj *[]byte) {
+	_bytesPool.Put(obj)
 }

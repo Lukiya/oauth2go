@@ -18,6 +18,14 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// var (
+// 	_stringPool = &sync.Pool{
+// 		New: func() interface{} {
+// 			return ""
+// 		},
+// 	}
+// )
+
 type AuthServerOptions struct {
 	AuthCookieName         string
 	AuthorizeEndpoint      string
