@@ -4,6 +4,8 @@ package main
 
 import (
 	"net/url"
+	"strconv"
+	"time"
 
 	"github.com/Lukiya/oauth2go"
 	"github.com/Lukiya/oauth2go/core"
@@ -61,10 +63,16 @@ func main() {
 	webServer.Post(authServerOptions.LoginEndpoint, func(ctx *fasthttp.RequestCtx) {
 		username := string(ctx.FormValue("Username"))
 		password := string(ctx.FormValue("Password"))
+		rememberLogin, _ := strconv.ParseBool(string(ctx.FormValue("RememberLogin")))
 		returnURL := string(ctx.FormValue(core.Form_ReturnUrl))
 
-		if username != password { // just for testing
-			core.SetCookieValue(ctx, authServerOptions.AuthCookieName, username) // set login cookie
+		if username != password || rememberLogin { // just for testing
+			if rememberLogin {
+				// set login cookie
+				core.SetCookieValue(ctx, authServerOptions.AuthCookieName, username, 24*time.Hour*14)
+			} else {
+				core.SetCookieValue(ctx, authServerOptions.AuthCookieName, username, 0)
+			}
 			core.Redirect(ctx, returnURL)
 			return
 		}

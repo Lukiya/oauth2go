@@ -45,6 +45,10 @@ func (x *DefaultClientValidator) ExractClientCredentials(ctx *fasthttp.RequestCt
 	}
 
 	r, err, errDesc = x.exractClientCredentialsFromBody(ctx)
+	if err != nil {
+		log.Warn(errDesc.Error())
+	}
+
 	return
 }
 
@@ -53,7 +57,6 @@ func (x *DefaultClientValidator) exractClientCredentialsFromHeader(ctx *fasthttp
 	if authorzation == "" {
 		err = errors.New(core.Err_invalid_request)
 		errDesc = errors.New("no authorization header")
-		log.Warn(errDesc.Error())
 		return
 	}
 
@@ -61,7 +64,6 @@ func (x *DefaultClientValidator) exractClientCredentialsFromHeader(ctx *fasthttp
 	if len(authArray) != 2 || authArray[1] == "" {
 		err = errors.New(core.Err_invalid_request)
 		errDesc = errors.New("invalid authorization header format")
-		log.Warn(errDesc.Error())
 		return
 	}
 
@@ -92,7 +94,6 @@ func (x *DefaultClientValidator) exractClientCredentialsFromBody(ctx *fasthttp.R
 	if id == "" {
 		err = errors.New(core.Err_invalid_request)
 		errDesc = errors.New("client id is missing")
-		log.Warn(errDesc.Error())
 		return
 	}
 
@@ -100,7 +101,6 @@ func (x *DefaultClientValidator) exractClientCredentialsFromBody(ctx *fasthttp.R
 	if secret == "" {
 		err = errors.New(core.Err_invalid_request)
 		errDesc = errors.New("client secret is missing")
-		log.Warn(errDesc.Error())
 		return
 	}
 

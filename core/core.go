@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"sync"
+	"time"
 
 	"github.com/gorilla/securecookie"
 	"github.com/sony/sonyflake"
@@ -79,12 +79,6 @@ const (
 var (
 	_idGenerator  *sonyflake.Sonyflake
 	_secureCookie *securecookie.SecureCookie
-	_bytesPool    = &sync.Pool{
-		New: func() interface{} {
-			mem := make([]byte, 1024)
-			return &mem
-		},
-	}
 )
 
 func init() {
@@ -129,7 +123,7 @@ func GetCookieValue(ctx *fasthttp.RequestCtx, key string) string {
 	return r
 }
 
-func SetCookieValue(ctx *fasthttp.RequestCtx, key, value string) {
+func SetCookieValue(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
 	if encryptedCookie, err := _secureCookie.Encode(key, value); err == nil {
 		authCookie := fasthttp.AcquireCookie()
 		authCookie.SetKey(key)
@@ -137,16 +131,12 @@ func SetCookieValue(ctx *fasthttp.RequestCtx, key, value string) {
 		authCookie.SetSecure(true)
 		authCookie.SetPath("/")
 		authCookie.SetHTTPOnly(true)
+		if duration > 0 {
+			authCookie.SetExpire(time.Now().Add(duration))
+		}
 		ctx.Response.Header.SetCookie(authCookie)
+		defer fasthttp.ReleaseCookie(authCookie)
 	} else {
 		u.LogError(err)
 	}
-}
-
-func AcquireBytes() *[]byte {
-	return _bytesPool.Get().(*[]byte)
-}
-
-func ReleaseBytes(obj *[]byte) {
-	_bytesPool.Put(obj)
 }

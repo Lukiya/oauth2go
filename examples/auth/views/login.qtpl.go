@@ -45,74 +45,76 @@ func (p *LoginPage) StreamBody(qw422016 *qt422016.Writer) {
 <input type="password" name="Password" class="form-control" placeholder="Password" required />
 </div>
 <div class="form-group small clearfix">
-<label class="checkbox-inline"><input type="checkbox" /> Remember me</label>
-<a href="#" class="forgot-link">Forgot Password?</a>
+<label class="checkbox-inline"><input type="checkbox" name="RememberLogin" value="true" /> Remember me</label>
+`)
+//line views/login.qtpl:26
+	qw422016.N().S(`
 </div>
 <button type="submit" class="btn btn-primary btn-block btn-lg" value="Login">Login</button>
 <input id="Token" name="Token" type="hidden" />
 </form>
 </div>
 `)
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 }
 
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 func (p *LoginPage) WriteBody(qq422016 qtio422016.Writer) {
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 	p.StreamBody(qw422016)
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 	qt422016.ReleaseWriter(qw422016)
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 }
 
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 func (p *LoginPage) Body() string {
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 	p.WriteBody(qb422016)
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 	qs422016 := string(qb422016.B)
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 	return qs422016
-//line views/login.qtpl:30
+//line views/login.qtpl:32
 }
 
-//line views/login.qtpl:32
+//line views/login.qtpl:34
 func (p *LoginPage) StreamScripts(qw422016 *qt422016.Writer) {
-//line views/login.qtpl:32
+//line views/login.qtpl:34
 	qw422016.N().S(`
 <script src="https://www.google.com/recaptcha/api.js?render=xxxx"></script>
 `)
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 }
 
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 func (p *LoginPage) WriteScripts(qq422016 qtio422016.Writer) {
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 	p.StreamScripts(qw422016)
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 	qt422016.ReleaseWriter(qw422016)
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 }
 
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 func (p *LoginPage) Scripts() string {
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 	p.WriteScripts(qb422016)
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 	qs422016 := string(qb422016.B)
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 	return qs422016
-//line views/login.qtpl:34
+//line views/login.qtpl:36
 }

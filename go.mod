@@ -12,6 +12,6 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/syncfuture/go v1.1.12
 	github.com/valyala/fasthttp v1.15.1
-	github.com/valyala/quicktemplate v1.5.2
+	github.com/valyala/quicktemplate v1.6.0
 	google.golang.org/protobuf v1.25.0
 )
