@@ -4,19 +4,19 @@ import (
 	"testing"
 
 	"github.com/Lukiya/oauth2go/model"
-	"github.com/Lukiya/oauth2go/store"
+	"github.com/Lukiya/oauth2go/security/rsa"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncfuture/go/config"
+	"github.com/syncfuture/go/sredis"
 )
-
-var (
-	_tokenStore store.ITokenStore
-)
-
-func init() {
-	_tokenStore = NewRedisTokenStore("rt:", _secretEncryptor, _redisConfig)
-}
 
 func TestRedisTokenStore(t *testing.T) {
+	var redisConfig *sredis.RedisConfig
+	configProvider := config.NewJsonConfigProvider()
+	configProvider.GetStruct("Redis", &redisConfig)
+	secretEncryptor := rsa.NewRSASecretEncryptor("../../examples/cert/test.key")
+	_tokenStore := NewRedisTokenStore("rt:", secretEncryptor, redisConfig)
+
 	a := &model.TokenRequestInfo{
 		ClientID: "test",
 	}

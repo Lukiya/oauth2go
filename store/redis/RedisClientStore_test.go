@@ -3,19 +3,19 @@ package redis
 import (
 	"testing"
 
-	"github.com/Lukiya/oauth2go/store"
+	"github.com/Lukiya/oauth2go/security/rsa"
 	"github.com/stretchr/testify/assert"
+	"github.com/syncfuture/go/config"
+	"github.com/syncfuture/go/sredis"
 )
-
-var (
-	_clientStore store.IClientStore
-)
-
-func init() {
-	_clientStore = NewRedisClientStore("CLIENTS", _secretEncryptor, _redisConfig)
-}
 
 func TestRedisClientStore_GetClient(t *testing.T) {
-	client := _clientStore.GetClient("test")
+	var redisConfig *sredis.RedisConfig
+	configProvider := config.NewJsonConfigProvider()
+	configProvider.GetStruct("Redis", &redisConfig)
+	secretEncryptor := rsa.NewRSASecretEncryptor("../../examples/cert/test.key")
+	clientStore := NewRedisClientStore("CLIENTS", secretEncryptor, redisConfig)
+
+	client := clientStore.GetClient("test")
 	assert.NotNil(t, client)
 }
