@@ -29,6 +29,7 @@ message Credential {
 }
 
 message Resource {
-	repeated string AllowedIssuers = 1; 
-	repeated string AllowedScopes = 2;
+	string Name = 1; 
+	repeated string Issuers = 2; 
+	repeated string Scopes = 3;
 }
