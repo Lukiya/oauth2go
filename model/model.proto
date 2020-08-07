@@ -22,3 +22,13 @@ message TokenRequestInfo {
     string CodeChanllenge = 5; 
     string CodeChanllengeMethod = 6; 
 }
+
+message Credential {
+    string Username = 1;
+    string Password = 2;
+}
+
+message Resource {
+	repeated string AllowedIssuers = 1; 
+	repeated string AllowedScopes = 2;
+}
