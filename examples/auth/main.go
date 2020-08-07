@@ -22,10 +22,10 @@ import (
 )
 
 func main() {
-	log.Init()
-	cfp := config.NewJsonConfigProvider()
+	cp := config.NewJsonConfigProvider()
+	log.Init(cp)
 	var redisConfig *sredis.RedisConfig
-	cfp.GetStruct("Redis", &redisConfig)
+	cp.GetStruct("Redis", &redisConfig)
 
 	secretEncryptor := rsa.NewRSASecretEncryptor("../cert/test.key")
 	clientStore := redis.NewRedisClientStore("CLIENTS", secretEncryptor, redisConfig)
@@ -37,7 +37,7 @@ func main() {
 	resourceOwnerValidator := newResourceOwnerValidator()
 
 	var authServerOptions *oauth2go.AuthServerOptions
-	cfp.GetStruct("OAuth", &authServerOptions)
+	cp.GetStruct("OAuth", &authServerOptions)
 	if authServerOptions == nil {
 		authServerOptions = &oauth2go.AuthServerOptions{
 			PkceRequired: true,
@@ -83,7 +83,7 @@ func main() {
 	webServer.Get(authServerOptions.LogoutEndpoint, func(ctx *fasthttp.RequestCtx) {})
 	webServer.ServeFiles(fasthttp.FSHandler("./wwwroot", 0))
 
-	listenAddr := cfp.GetString("ListenAddr")
+	listenAddr := cp.GetString("ListenAddr")
 	log.Infof("listen on %s", listenAddr)
 	fasthttp.ListenAndServe(listenAddr, webServer.Serve)
 }
