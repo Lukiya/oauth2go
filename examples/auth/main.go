@@ -36,17 +36,18 @@ func main() {
 
 	resourceOwnerValidator := newResourceOwnerValidator()
 
-	authServerOptions := &oauth2go.AuthServerOptions{
-		PkceRequired:           true,
-		ClientStore:            clientStore,
-		TokenStore:             tokenStore,
-		PrivateKey:             privateKey,
-		ClaimsGenerator:        claimsGenerator,
-		ResourceOwnerValidator: resourceOwnerValidator,
-		AuthorizeEndpoint:      "/connect/authorize",
-		TokenEndpoint:          "/connect/token",
-		LoginEndpoint:          "/account/login",
+	var authServerOptions *oauth2go.AuthServerOptions
+	cfp.GetStruct("OAuth", &authServerOptions)
+	if authServerOptions == nil {
+		authServerOptions = &oauth2go.AuthServerOptions{
+			PkceRequired: true,
+		}
 	}
+	authServerOptions.ClientStore = clientStore
+	authServerOptions.TokenStore = tokenStore
+	authServerOptions.PrivateKey = privateKey
+	authServerOptions.ClaimsGenerator = claimsGenerator
+	authServerOptions.ResourceOwnerValidator = resourceOwnerValidator
 	authServer := oauth2go.NewDefaultAuthServer(authServerOptions)
 
 	webServer := server.NewWebServer()

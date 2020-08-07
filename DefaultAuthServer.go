@@ -86,7 +86,7 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	if options.TokenGenerator == nil {
 		options.TokenGenerator = token.NewDefaultTokenGenerator(
 			options.PrivateKey,
-			jwt.SigningMethodPS256.SigningMethodRSA,
+			jwt.SigningMethodPS256,
 			options.ClaimsGenerator,
 		)
 	}
