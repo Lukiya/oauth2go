@@ -253,20 +253,36 @@ func (x *DefaultClientValidator) validateGrants(client model.IClient, grantType 
 }
 
 // validateScopes _
-func (x *DefaultClientValidator) validateScopes(client model.IClient, scope string) (error, error) {
+func (x *DefaultClientValidator) validateScopes(client model.IClient, scopesStr string) (error, error) {
 	allowedScopes := client.GetScopes()
 	if allowedScopes != nil && len(allowedScopes) > 0 {
-		for _, allowedScope := range allowedScopes {
-			if allowedScope == scope {
-				return nil, nil
+		requestedScopeArray := strings.Split(scopesStr, core.Seperator_Scope)
+
+		for _, requestedScope := range requestedScopeArray {
+			if !isScopeAllowed(requestedScope, allowedScopes) {
+				err := errors.New(core.Err_unauthorized_client)
+				errDesc := fmt.Errorf("'%s' is not allowed for scope '%s'", client.GetID(), requestedScope)
+				log.Warn(errDesc.Error())
+				return err, errDesc
 			}
 		}
+
+		return nil, nil
 	}
 
 	err := errors.New(core.Err_unauthorized_client)
-	errDesc := fmt.Errorf("'%s' scope is not allowed for '%s'", scope, client.GetID())
+	errDesc := fmt.Errorf("'%s' has no allowed scopes", client.GetID())
 	log.Warn(errDesc.Error())
 	return err, errDesc
+}
+
+func isScopeAllowed(requestedScope string, allowedScopes []string) bool {
+	for _, allowedScope := range allowedScopes {
+		if allowedScope == requestedScope {
+			return true
+		}
+	}
+	return false
 }
 
 // validateRedirectUris _
@@ -286,6 +302,7 @@ func (x *DefaultClientValidator) validateRedirectUris(client model.IClient, redi
 	return err, errDesc
 }
 
+// validateResponseType _
 func (x *DefaultClientValidator) validateResponseType(client model.IClient, responseType string) (error, error) {
 	if responseType == core.ResponseType_Code {
 		return x.validateGrants(client, core.GrantType_AuthorizationCode)
