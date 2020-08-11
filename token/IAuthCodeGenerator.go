@@ -1,5 +1,7 @@
 package token
 
+import "github.com/Lukiya/oauth2go/core"
+
 type IAuthCodeGenerator interface {
 	Generate() string
 }
@@ -11,5 +13,5 @@ func NewDefaultAuthCodeGenerator() IAuthCodeGenerator {
 type DefaultAuthCodeGenerator struct{}
 
 func (x *DefaultAuthCodeGenerator) Generate() string {
-	return generate()
+	return core.Random64String()
 }

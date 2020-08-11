@@ -3,6 +3,7 @@ package token
 import (
 	"crypto/rsa"
 
+	"github.com/Lukiya/oauth2go/core"
 	"github.com/Lukiya/oauth2go/model"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/syncfuture/go/u"
@@ -43,5 +44,5 @@ func (x *DefaultTokenGenerator) GenerateAccessToken(ctx *fasthttp.RequestCtx, gr
 }
 
 func (x *DefaultTokenGenerator) GenerateRefreshToken() string {
-	return generate()
+	return core.Random64String()
 }

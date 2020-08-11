@@ -1,9 +1,11 @@
 package core
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gorilla/securecookie"
@@ -79,6 +81,12 @@ const (
 var (
 	_idGenerator  *sonyflake.Sonyflake
 	_secureCookie *securecookie.SecureCookie
+	_byte64Pool   = &sync.Pool{
+		New: func() interface{} {
+			mem := make([]byte, 64)
+			return &mem
+		},
+	}
 )
 
 func init() {
@@ -139,4 +147,12 @@ func SetCookieValue(ctx *fasthttp.RequestCtx, key, value string, duration time.D
 	} else {
 		u.LogError(err)
 	}
+}
+
+func Random64String() string {
+	randomNumber := _byte64Pool.Get().(*[]byte)
+	rand.Read(*randomNumber)
+	defer _byte64Pool.Put(randomNumber)
+
+	return base64.RawURLEncoding.EncodeToString(*randomNumber)
 }
