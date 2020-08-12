@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/Lukiya/oauth2go/core"
 	"github.com/Lukiya/oauth2go/model"
@@ -14,17 +15,11 @@ import (
 	"github.com/Lukiya/oauth2go/store"
 	"github.com/Lukiya/oauth2go/token"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/securecookie"
 	log "github.com/syncfuture/go/slog"
+	"github.com/syncfuture/go/u"
 	"github.com/valyala/fasthttp"
 )
-
-// var (
-// 	_stringPool = &sync.Pool{
-// 		New: func() interface{} {
-// 			return ""
-// 		},
-// 	}
-// )
 
 type AuthServerOptions struct {
 	AuthCookieName         string
@@ -33,6 +28,7 @@ type AuthServerOptions struct {
 	LoginEndpoint          string
 	LogoutEndpoint         string
 	PkceRequired           bool
+	CookieManager          *securecookie.SecureCookie
 	PrivateKey             *rsa.PrivateKey
 	ClientStore            store.IClientStore
 	TokenStore             store.ITokenStore
@@ -57,6 +53,9 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	}
 	if options.ClaimsGenerator == nil {
 		log.Fatal("ClaimsGenerator cannot be nil")
+	}
+	if options.CookieManager == nil {
+		log.Fatal("CookieManager cannot be nil")
 	}
 	if options.AuthCookieName == "" {
 		options.AuthCookieName = "OAuth"
@@ -101,6 +100,7 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 		LoginEndpoint:          options.LoginEndpoint,
 		LogoutEndpoint:         options.LogoutEndpoint,
 		PkceRequired:           options.PkceRequired,
+		CookieManager:          options.CookieManager,
 		ClientStore:            options.ClientStore,
 		TokenStore:             options.TokenStore,
 		AuthorizationCodeStore: options.AuthorizationCodeStore,
@@ -119,6 +119,7 @@ type DefaultAuthServer struct {
 	LoginEndpoint          string
 	LogoutEndpoint         string
 	PkceRequired           bool
+	CookieManager          *securecookie.SecureCookie
 	ClientStore            store.IClientStore
 	TokenStore             store.ITokenStore
 	AuthorizationCodeStore store.IAuthorizationCodeStore
@@ -150,7 +151,7 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	username := core.GetCookieValue(ctx, x.AuthCookieName)
+	username := x.GetCookieValue(ctx, x.AuthCookieName)
 	if username == "" {
 		returnURL := url.QueryEscape(string(ctx.URI().RequestURI()))
 		targetURL := fmt.Sprintf("%s?%s=%s", x.LoginEndpoint, core.Form_ReturnUrl, returnURL)
@@ -163,6 +164,40 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 		x.AuthorizationCodeRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
 	case core.ResponseType_Token:
 		x.ImplicitTokenRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
+	}
+}
+
+func (x *DefaultAuthServer) GetCookieValue(ctx *fasthttp.RequestCtx, name string) string {
+	encryptedCookie := string(ctx.Request.Header.Cookie(name))
+	if encryptedCookie == "" {
+		return ""
+	}
+
+	var r string
+	err := x.CookieManager.Decode(name, encryptedCookie, &r)
+
+	if u.LogError(err) {
+		return ""
+	}
+
+	return r
+}
+
+func (x *DefaultAuthServer) SetCookieValue(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
+	if encryptedCookie, err := x.CookieManager.Encode(key, value); err == nil {
+		authCookie := fasthttp.AcquireCookie()
+		authCookie.SetKey(key)
+		authCookie.SetValue(encryptedCookie)
+		authCookie.SetSecure(true)
+		authCookie.SetPath("/")
+		authCookie.SetHTTPOnly(true)
+		if duration > 0 {
+			authCookie.SetExpire(time.Now().Add(duration))
+		}
+		ctx.Response.Header.SetCookie(authCookie)
+		defer fasthttp.ReleaseCookie(authCookie)
+	} else {
+		u.LogError(err)
 	}
 }
 

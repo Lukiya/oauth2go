@@ -4,13 +4,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
 	"sync"
-	"time"
 
 	"github.com/gorilla/securecookie"
 	"github.com/sony/sonyflake"
-	"github.com/syncfuture/go/u"
 	"github.com/valyala/fasthttp"
 )
 
@@ -104,50 +101,50 @@ func ToSHA256Base64URL(in string) string {
 	return base64.RawURLEncoding.EncodeToString(r)
 }
 
-// GenerateID _
-func GenerateID() string {
-	a, _ := _idGenerator.NextID()
-	return fmt.Sprintf("%x", a)
-}
+// // GenerateID _
+// func GenerateID() string {
+// 	a, _ := _idGenerator.NextID()
+// 	return fmt.Sprintf("%x", a)
+// }
 
 func Redirect(ctx *fasthttp.RequestCtx, url string) {
 	ctx.Response.Header.Add("Location", url)
 	ctx.Response.SetStatusCode(fasthttp.StatusFound)
 }
 
-func GetCookieValue(ctx *fasthttp.RequestCtx, key string) string {
-	encryptedCookie := string(ctx.Request.Header.Cookie(key))
-	if encryptedCookie == "" {
-		return ""
-	}
+// func GetCookieValue(ctx *fasthttp.RequestCtx, key string) string {
+// 	encryptedCookie := string(ctx.Request.Header.Cookie(key))
+// 	if encryptedCookie == "" {
+// 		return ""
+// 	}
 
-	var r string
-	err := _secureCookie.Decode(key, encryptedCookie, &r)
+// 	var r string
+// 	err := _secureCookie.Decode(key, encryptedCookie, &r)
 
-	if u.LogError(err) {
-		return ""
-	}
+// 	if u.LogError(err) {
+// 		return ""
+// 	}
 
-	return r
-}
+// 	return r
+// }
 
-func SetCookieValue(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
-	if encryptedCookie, err := _secureCookie.Encode(key, value); err == nil {
-		authCookie := fasthttp.AcquireCookie()
-		authCookie.SetKey(key)
-		authCookie.SetValue(encryptedCookie)
-		authCookie.SetSecure(true)
-		authCookie.SetPath("/")
-		authCookie.SetHTTPOnly(true)
-		if duration > 0 {
-			authCookie.SetExpire(time.Now().Add(duration))
-		}
-		ctx.Response.Header.SetCookie(authCookie)
-		defer fasthttp.ReleaseCookie(authCookie)
-	} else {
-		u.LogError(err)
-	}
-}
+// func SetCookieValue(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
+// 	if encryptedCookie, err := _secureCookie.Encode(key, value); err == nil {
+// 		authCookie := fasthttp.AcquireCookie()
+// 		authCookie.SetKey(key)
+// 		authCookie.SetValue(encryptedCookie)
+// 		authCookie.SetSecure(true)
+// 		authCookie.SetPath("/")
+// 		authCookie.SetHTTPOnly(true)
+// 		if duration > 0 {
+// 			authCookie.SetExpire(time.Now().Add(duration))
+// 		}
+// 		ctx.Response.Header.SetCookie(authCookie)
+// 		defer fasthttp.ReleaseCookie(authCookie)
+// 	} else {
+// 		u.LogError(err)
+// 	}
+// }
 
 func Random64String() string {
 	randomNumber := _byte64Pool.Get().(*[]byte)

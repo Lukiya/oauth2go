@@ -3,6 +3,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"net/url"
 	"strconv"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/Lukiya/oauth2go/security/rsa"
 	"github.com/Lukiya/oauth2go/server"
 	"github.com/Lukiya/oauth2go/store/redis"
+	"github.com/gorilla/securecookie"
 	"github.com/syncfuture/go/config"
 	"github.com/syncfuture/go/rsautil"
 	log "github.com/syncfuture/go/slog"
@@ -43,6 +45,11 @@ func main() {
 			PkceRequired: true,
 		}
 	}
+	hashKey := make([]byte, 32)
+	blockKey := make([]byte, 32)
+	rand.Read(hashKey)
+	rand.Read(blockKey)
+	authServerOptions.CookieManager = securecookie.New(hashKey, blockKey)
 	authServerOptions.ClientStore = clientStore
 	authServerOptions.TokenStore = tokenStore
 	authServerOptions.PrivateKey = privateKey
@@ -70,9 +77,9 @@ func main() {
 		if username != password || rememberLogin { // just for testing
 			if rememberLogin {
 				// set login cookie
-				core.SetCookieValue(ctx, authServerOptions.AuthCookieName, username, 24*time.Hour*14)
+				authServer.SetCookieValue(ctx, authServerOptions.AuthCookieName, username, 24*time.Hour*14)
 			} else {
-				core.SetCookieValue(ctx, authServerOptions.AuthCookieName, username, 0)
+				authServer.SetCookieValue(ctx, authServerOptions.AuthCookieName, username, 0)
 			}
 			core.Redirect(ctx, returnURL)
 			return
