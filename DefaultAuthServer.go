@@ -21,25 +21,45 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-type AuthServerOptions struct {
-	AuthCookieName         string
-	AuthorizeEndpoint      string
-	TokenEndpoint          string
-	LoginEndpoint          string
-	LogoutEndpoint         string
-	PkceRequired           bool
-	CookieManager          *securecookie.SecureCookie
-	PrivateKey             *rsa.PrivateKey
-	ClientStore            store.IClientStore
-	TokenStore             store.ITokenStore
-	AuthorizationCodeStore store.IAuthorizationCodeStore
-	ClientValidator        security.IClientValidator
-	PkceValidator          security.IPkceValidator
-	ResourceOwnerValidator security.IResourceOwnerValidator
-	AuthCodeGenerator      token.IAuthCodeGenerator
-	TokenGenerator         token.ITokenGenerator
-	ClaimsGenerator        token.ITokenClaimsGenerator
-}
+type (
+	AuthServerOptions struct {
+		AuthCookieName         string
+		AuthorizeEndpoint      string
+		TokenEndpoint          string
+		LoginEndpoint          string
+		LogoutEndpoint         string
+		PkceRequired           bool
+		CookieManager          *securecookie.SecureCookie
+		PrivateKey             *rsa.PrivateKey
+		ClientStore            store.IClientStore
+		TokenStore             store.ITokenStore
+		AuthorizationCodeStore store.IAuthorizationCodeStore
+		ClientValidator        security.IClientValidator
+		PkceValidator          security.IPkceValidator
+		ResourceOwnerValidator security.IResourceOwnerValidator
+		AuthCodeGenerator      token.IAuthCodeGenerator
+		TokenGenerator         token.ITokenGenerator
+		ClaimsGenerator        token.ITokenClaimsGenerator
+	}
+
+	DefaultAuthServer struct {
+		AuthCookieName         string
+		AuthorizeEndpoint      string
+		TokenEndpoint          string
+		LoginEndpoint          string
+		LogoutEndpoint         string
+		PkceRequired           bool
+		CookieManager          *securecookie.SecureCookie
+		ClientStore            store.IClientStore
+		TokenStore             store.ITokenStore
+		AuthorizationCodeStore store.IAuthorizationCodeStore
+		ClientValidator        security.IClientValidator
+		PkceValidator          security.IPkceValidator
+		ResourceOwnerValidator security.IResourceOwnerValidator
+		AuthCodeGenerator      token.IAuthCodeGenerator
+		TokenGenerator         token.ITokenGenerator
+	}
+)
 
 func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	if options.ClientStore == nil {
@@ -110,24 +130,6 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 		TokenGenerator:         options.TokenGenerator,
 		PkceValidator:          options.PkceValidator,
 	}
-}
-
-type DefaultAuthServer struct {
-	AuthCookieName         string
-	AuthorizeEndpoint      string
-	TokenEndpoint          string
-	LoginEndpoint          string
-	LogoutEndpoint         string
-	PkceRequired           bool
-	CookieManager          *securecookie.SecureCookie
-	ClientStore            store.IClientStore
-	TokenStore             store.ITokenStore
-	AuthorizationCodeStore store.IAuthorizationCodeStore
-	ClientValidator        security.IClientValidator
-	PkceValidator          security.IPkceValidator
-	ResourceOwnerValidator security.IResourceOwnerValidator
-	AuthCodeGenerator      token.IAuthCodeGenerator
-	TokenGenerator         token.ITokenGenerator
 }
 
 // AuthorizeRequestHandler handle authorize request

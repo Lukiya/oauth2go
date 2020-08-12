@@ -29,15 +29,6 @@ func main() {
 	var redisConfig *sredis.RedisConfig
 	cp.GetStruct("Redis", &redisConfig)
 
-	secretEncryptor := rsa.NewRSASecretEncryptor("../cert/test.key")
-	clientStore := redis.NewRedisClientStore("CLIENTS", secretEncryptor, redisConfig)
-	tokenStore := redis.NewRedisTokenStore("rt:", secretEncryptor, redisConfig)
-	privateKey, err := rsautil.ReadPrivateKeyFromFile("../cert/test.key")
-	u.LogFaltal(err)
-	claimsGenerator := newClaimsGenerator()
-
-	resourceOwnerValidator := newResourceOwnerValidator()
-
 	var authServerOptions *oauth2go.AuthServerOptions
 	cp.GetStruct("OAuth", &authServerOptions)
 	if authServerOptions == nil {
@@ -50,11 +41,14 @@ func main() {
 	rand.Read(hashKey)
 	rand.Read(blockKey)
 	authServerOptions.CookieManager = securecookie.New(hashKey, blockKey)
-	authServerOptions.ClientStore = clientStore
-	authServerOptions.TokenStore = tokenStore
-	authServerOptions.PrivateKey = privateKey
-	authServerOptions.ClaimsGenerator = claimsGenerator
-	authServerOptions.ResourceOwnerValidator = resourceOwnerValidator
+	secretEncryptor := rsa.NewRSASecretEncryptor("../cert/test.key")
+	authServerOptions.ClientStore = redis.NewRedisClientStore("CLIENTS", secretEncryptor, redisConfig)
+	authServerOptions.TokenStore = redis.NewRedisTokenStore("rt:", secretEncryptor, redisConfig)
+	var err error
+	authServerOptions.PrivateKey, err = rsautil.ReadPrivateKeyFromFile("../cert/test.key")
+	u.LogFaltal(err)
+	authServerOptions.ClaimsGenerator = newClaimsGenerator()
+	authServerOptions.ResourceOwnerValidator = newResourceOwnerValidator()
 	authServer := oauth2go.NewDefaultAuthServer(authServerOptions)
 
 	webServer := server.NewWebServer()
