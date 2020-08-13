@@ -367,7 +367,7 @@ func (x *DefaultAuthServer) HandleClientCredentialsTokenRequest(ctx *fasthttp.Re
 	// issue token directly
 	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,
-		core.GrantType_Implicit,
+		core.GrantType_Client,
 		client,
 		strings.Split(scopesStr, core.Seperator_Scope),
 		client.GetID(),
