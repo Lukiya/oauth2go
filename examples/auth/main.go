@@ -71,9 +71,9 @@ func main() {
 		if username != password || rememberLogin { // just for testing
 			if rememberLogin {
 				// set login cookie
-				authServer.SetCookieValue(ctx, authServerOptions.AuthCookieName, username, 24*time.Hour*14)
+				authServer.SetCookie(ctx, authServerOptions.AuthCookieName, username, 24*time.Hour*14)
 			} else {
-				authServer.SetCookieValue(ctx, authServerOptions.AuthCookieName, username, 0)
+				authServer.SetCookie(ctx, authServerOptions.AuthCookieName, username, 0)
 			}
 			core.Redirect(ctx, returnURL)
 			return
@@ -81,7 +81,7 @@ func main() {
 
 		writePage(ctx, new(views.LoginPage))
 	})
-	webServer.Get(authServerOptions.LogoutEndpoint, authServer.LogoutRequestHandler)
+	webServer.Get(authServerOptions.EndSessionEndpoint, authServer.EndSessionRequestHandler)
 	webServer.ServeFiles(fasthttp.FSHandler("./wwwroot", 0))
 
 	listenAddr := cp.GetString("ListenAddr")

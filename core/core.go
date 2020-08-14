@@ -112,7 +112,7 @@ func Redirect(ctx *fasthttp.RequestCtx, url string) {
 	ctx.Response.SetStatusCode(fasthttp.StatusFound)
 }
 
-// func GetCookieValue(ctx *fasthttp.RequestCtx, key string) string {
+// func GetCookie(ctx *fasthttp.RequestCtx, key string) string {
 // 	encryptedCookie := string(ctx.Request.Header.Cookie(key))
 // 	if encryptedCookie == "" {
 // 		return ""
@@ -128,7 +128,7 @@ func Redirect(ctx *fasthttp.RequestCtx, url string) {
 // 	return r
 // }
 
-// func SetCookieValue(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
+// func SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
 // 	if encryptedCookie, err := _secureCookie.Encode(key, value); err == nil {
 // 		authCookie := fasthttp.AcquireCookie()
 // 		authCookie.SetKey(key)

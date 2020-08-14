@@ -26,6 +26,7 @@ type (
 		AuthCookieName         string
 		AuthorizeEndpoint      string
 		TokenEndpoint          string
+		EndSessionEndpoint     string
 		LoginEndpoint          string
 		LogoutEndpoint         string
 		PkceRequired           bool
@@ -46,6 +47,7 @@ type (
 		AuthCookieName         string
 		AuthorizeEndpoint      string
 		TokenEndpoint          string
+		EndSessionEndpoint     string
 		LoginEndpoint          string
 		LogoutEndpoint         string
 		PkceRequired           bool
@@ -85,6 +87,9 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	}
 	if options.TokenEndpoint == "" {
 		options.TokenEndpoint = "/connect/token"
+	}
+	if options.EndSessionEndpoint == "" {
+		options.EndSessionEndpoint = "/connect/endsession"
 	}
 	if options.LoginEndpoint == "" {
 		options.LoginEndpoint = "/account/login"
@@ -155,7 +160,7 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	username := x.GetCookieValue(ctx, x.AuthCookieName)
+	username := x.GetCookie(ctx, x.AuthCookieName)
 	if username == "" {
 		returnURL := url.QueryEscape(string(ctx.URI().RequestURI()))
 		targetURL := fmt.Sprintf("%s?%s=%s", x.LoginEndpoint, core.Form_ReturnUrl, returnURL)
@@ -330,7 +335,7 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (x *DefaultAuthServer) LogoutRequestHandler(ctx *fasthttp.RequestCtx) {
+func (x *DefaultAuthServer) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 	clientID := string(ctx.FormValue(core.Form_ClientID))
 	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
 	state := string(ctx.FormValue(core.Form_State))
@@ -344,6 +349,10 @@ func (x *DefaultAuthServer) LogoutRequestHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	// delete login cookie
+	x.DeleteCookie(ctx, x.AuthCookieName)
+
+	// redirect to client
 	targetURL := fmt.Sprintf("%s?%s=%s",
 		redirectURI,
 		core.Form_State,
@@ -352,7 +361,7 @@ func (x *DefaultAuthServer) LogoutRequestHandler(ctx *fasthttp.RequestCtx) {
 	core.Redirect(ctx, targetURL)
 }
 
-func (x *DefaultAuthServer) GetCookieValue(ctx *fasthttp.RequestCtx, name string) string {
+func (x *DefaultAuthServer) GetCookie(ctx *fasthttp.RequestCtx, name string) string {
 	encryptedCookie := string(ctx.Request.Header.Cookie(name))
 	if encryptedCookie == "" {
 		return ""
@@ -368,7 +377,7 @@ func (x *DefaultAuthServer) GetCookieValue(ctx *fasthttp.RequestCtx, name string
 	return r
 }
 
-func (x *DefaultAuthServer) SetCookieValue(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
+func (x *DefaultAuthServer) SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
 	if encryptedCookie, err := x.CookieManager.Encode(key, value); err == nil {
 		authCookie := fasthttp.AcquireCookie()
 		authCookie.SetKey(key)
@@ -384,6 +393,10 @@ func (x *DefaultAuthServer) SetCookieValue(ctx *fasthttp.RequestCtx, key, value 
 	} else {
 		u.LogError(err)
 	}
+}
+
+func (x *DefaultAuthServer) DeleteCookie(ctx *fasthttp.RequestCtx, key string) {
+	ctx.Response.Header.DelCookie(key)
 }
 
 // handleClientCredentialsTokenRequest handle client credentials token request
