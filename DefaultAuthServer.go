@@ -89,6 +89,9 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	if options.LoginEndpoint == "" {
 		options.LoginEndpoint = "/account/login"
 	}
+	if options.LogoutEndpoint == "" {
+		options.LogoutEndpoint = "/account/logout"
+	}
 
 	if options.AuthorizationCodeStore == nil {
 		options.AuthorizationCodeStore = store.NewDefaultAuthorizationCodeStore(180)
@@ -141,12 +144,11 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 	state := string(ctx.FormValue(core.Form_State))
 
 	// verify client
-	client, err, errDesc := x.ClientValidator.VerifyClient4(
+	client, err, errDesc := x.ClientValidator.VerifyRespTypeRedirectURIScope(
 		clientID,
 		respType,
 		redirectURI,
 		scopesStr,
-		state,
 	)
 	if err != nil {
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
@@ -166,40 +168,6 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 		x.AuthorizationCodeRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
 	case core.ResponseType_Token:
 		x.ImplicitTokenRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
-	}
-}
-
-func (x *DefaultAuthServer) GetCookieValue(ctx *fasthttp.RequestCtx, name string) string {
-	encryptedCookie := string(ctx.Request.Header.Cookie(name))
-	if encryptedCookie == "" {
-		return ""
-	}
-
-	var r string
-	err := x.CookieManager.Decode(name, encryptedCookie, &r)
-
-	if u.LogError(err) {
-		return ""
-	}
-
-	return r
-}
-
-func (x *DefaultAuthServer) SetCookieValue(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
-	if encryptedCookie, err := x.CookieManager.Encode(key, value); err == nil {
-		authCookie := fasthttp.AcquireCookie()
-		authCookie.SetKey(key)
-		authCookie.SetValue(encryptedCookie)
-		authCookie.SetSecure(true)
-		authCookie.SetPath("/")
-		authCookie.SetHTTPOnly(true)
-		if duration > 0 {
-			authCookie.SetExpire(time.Now().Add(duration))
-		}
-		ctx.Response.Header.SetCookie(authCookie)
-		defer fasthttp.ReleaseCookie(authCookie)
-	} else {
-		u.LogError(err)
 	}
 }
 
@@ -330,10 +298,10 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	var client model.IClient
 	if grantTypeStr == core.GrantType_AuthorizationCode {
 		// auth code grant doesn't post scopes
-		client, err, errDesc = x.ClientValidator.VerifyClient2(credentials, grantTypeStr)
+		client, err, errDesc = x.ClientValidator.VerifyCredentialGrantType(credentials, grantTypeStr)
 	} else {
 		// other scopes must post scopes
-		client, err, errDesc = x.ClientValidator.VerifyClient3(credentials, grantTypeStr, scopesStr)
+		client, err, errDesc = x.ClientValidator.VerifyCredentialGrantTypeScope(credentials, grantTypeStr, scopesStr)
 	}
 
 	if err != nil {
@@ -349,21 +317,77 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 
 	switch grantTypeStr {
 	case core.GrantType_Client:
-		x.HandleClientCredentialsTokenRequest(ctx, client, scopesStr)
+		x.handleClientCredentialsTokenRequest(ctx, client, scopesStr)
 	case core.GrantType_AuthorizationCode:
-		x.HandleAuthorizationCodeTokenRequest(ctx, client)
+		x.handleAuthorizationCodeTokenRequest(ctx, client)
 	case core.GrantType_ResourceOwner:
-		x.HandleResourceOwnerTokenRequest(ctx, client, scopesStr)
+		x.handleResourceOwnerTokenRequest(ctx, client, scopesStr)
 	case core.GrantType_RefreshToken:
-		x.HandleRefreshTokenRequest(ctx, client)
+		x.handleRefreshTokenRequest(ctx, client)
 	default:
 		log.Warn(core.Err_unsupported_grant_type + ":" + grantTypeStr)
 		x.writeError(ctx, http.StatusBadRequest, errors.New(core.Err_unsupported_grant_type), nil)
 	}
 }
 
-// HandleClientCredentialsTokenRequest handle client credentials token request
-func (x *DefaultAuthServer) HandleClientCredentialsTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
+func (x *DefaultAuthServer) LogoutRequestHandler(ctx *fasthttp.RequestCtx) {
+	clientID := string(ctx.FormValue(core.Form_ClientID))
+	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
+	state := string(ctx.FormValue(core.Form_State))
+	// verify client
+	_, err, errDesc := x.ClientValidator.VerifyRedirectURI(
+		clientID,
+		redirectURI,
+	)
+	if err != nil {
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+
+	targetURL := fmt.Sprintf("%s?%s=%s",
+		redirectURI,
+		core.Form_State,
+		url.QueryEscape(state),
+	)
+	core.Redirect(ctx, targetURL)
+}
+
+func (x *DefaultAuthServer) GetCookieValue(ctx *fasthttp.RequestCtx, name string) string {
+	encryptedCookie := string(ctx.Request.Header.Cookie(name))
+	if encryptedCookie == "" {
+		return ""
+	}
+
+	var r string
+	err := x.CookieManager.Decode(name, encryptedCookie, &r)
+
+	if u.LogError(err) {
+		return ""
+	}
+
+	return r
+}
+
+func (x *DefaultAuthServer) SetCookieValue(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
+	if encryptedCookie, err := x.CookieManager.Encode(key, value); err == nil {
+		authCookie := fasthttp.AcquireCookie()
+		authCookie.SetKey(key)
+		authCookie.SetValue(encryptedCookie)
+		authCookie.SetSecure(true)
+		authCookie.SetPath("/")
+		authCookie.SetHTTPOnly(true)
+		if duration > 0 {
+			authCookie.SetExpire(time.Now().Add(duration))
+		}
+		ctx.Response.Header.SetCookie(authCookie)
+		defer fasthttp.ReleaseCookie(authCookie)
+	} else {
+		u.LogError(err)
+	}
+}
+
+// handleClientCredentialsTokenRequest handle client credentials token request
+func (x *DefaultAuthServer) handleClientCredentialsTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
 	// issue token directly
 	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,
@@ -380,8 +404,8 @@ func (x *DefaultAuthServer) HandleClientCredentialsTokenRequest(ctx *fasthttp.Re
 	x.writeToken(ctx, token, scopesStr, client.GetAccessTokenExpireSeconds(), "")
 }
 
-// HandleAuthorizationCodeTokenRequest handle authorization code token request
-func (x *DefaultAuthServer) HandleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
+// handleAuthorizationCodeTokenRequest handle authorization code token request
+func (x *DefaultAuthServer) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
 	// exchange token by using auhorization code
 	code := string(ctx.FormValue(core.Form_Code))
 	clientID := string(ctx.FormValue(core.Form_ClientID))
@@ -441,8 +465,8 @@ func (x *DefaultAuthServer) HandleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 	x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, tokenRequestInfo)
 }
 
-// HandleResourceOwnerTokenRequest handle resource owner token request
-func (x *DefaultAuthServer) HandleResourceOwnerTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
+// handleResourceOwnerTokenRequest handle resource owner token request
+func (x *DefaultAuthServer) handleResourceOwnerTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
 	// verify username & password
 	username := string(ctx.FormValue(core.Form_Username))
 	password := string(ctx.FormValue(core.Form_Password))
@@ -462,8 +486,8 @@ func (x *DefaultAuthServer) HandleResourceOwnerTokenRequest(ctx *fasthttp.Reques
 	}
 }
 
-// HandleRefreshTokenRequest handle refresh token request
-func (x *DefaultAuthServer) HandleRefreshTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
+// handleRefreshTokenRequest handle refresh token request
+func (x *DefaultAuthServer) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
 	refreshToken := string(ctx.FormValue(core.Form_RefreshToken))
 	if refreshToken == "" {
 		err := errors.New(core.Err_invalid_request)
@@ -492,6 +516,19 @@ func (x *DefaultAuthServer) HandleRefreshTokenRequest(ctx *fasthttp.RequestCtx, 
 
 	// issue token
 	x.issueTokenByRequestInfo(ctx, core.GrantType_RefreshToken, client, tokenRequestInfo)
+}
+
+func (x *DefaultAuthServer) handleLogoutRequest(ctx *fasthttp.RequestCtx, statusCode int, err, errDesc error) {
+	if errDesc == nil {
+		errDesc = err
+	}
+
+	ctx.SetStatusCode(statusCode)
+	ctx.SetContentType(core.ContentType_Json)
+	ctx.Response.Header.Add(core.Header_CacheControl, core.Header_CacheControl_Value)
+	ctx.Response.Header.Add(core.Header_Pragma, core.Header_Pragma_Value)
+
+	ctx.WriteString(fmt.Sprintf(core.Format_Error, err.Error(), errDesc.Error()))
 }
 
 // issueTokenByRequestInfo issue access token and refresh token

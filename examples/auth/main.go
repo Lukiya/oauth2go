@@ -81,7 +81,7 @@ func main() {
 
 		writePage(ctx, new(views.LoginPage))
 	})
-	webServer.Get(authServerOptions.LogoutEndpoint, func(ctx *fasthttp.RequestCtx) {})
+	webServer.Get(authServerOptions.LogoutEndpoint, authServer.LogoutRequestHandler)
 	webServer.ServeFiles(fasthttp.FSHandler("./wwwroot", 0))
 
 	listenAddr := cp.GetString("ListenAddr")

@@ -17,14 +17,16 @@ import (
 type IClientValidator interface {
 	// ExractClientCredentials extract client credential from request
 	ExractClientCredentials(ctx *fasthttp.RequestCtx) (*model.Credential, error, error)
-	// VerifyClient1 verify client id & secret
-	VerifyClient1(credential *model.Credential) (model.IClient, error, error)
-	// VerifyClient2 verify client id, secret & grant type
-	VerifyClient2(credential *model.Credential, grantType string) (model.IClient, error, error)
-	// VerifyClient3 verify client id, secret, grant type & scopes
-	VerifyClient3(credential *model.Credential, grantType, scopesStr string) (model.IClient, error, error)
-	// VerifyClient4 verify client id & secret, response type, scopes, redirect uri
-	VerifyClient4(clientID, responseType, redirectURI, scopesStr, state string) (model.IClient, error, error)
+	// VerifyCredential verify client id & secret
+	VerifyCredential(credential *model.Credential) (model.IClient, error, error)
+	// VerifyCredentialGrantType verify client id, secret & grant type
+	VerifyCredentialGrantType(credential *model.Credential, grantType string) (model.IClient, error, error)
+	// VerifyCredentialGrantTypeScope verify client id, secret, grant type & scopes
+	VerifyCredentialGrantTypeScope(credential *model.Credential, grantType, scopesStr string) (model.IClient, error, error)
+	// VerifyRespTypeRedirectURIScope verify client, response type, scopes, redirect uri
+	VerifyRespTypeRedirectURIScope(clientID, responseType, redirectURI, scopesStr string) (model.IClient, error, error)
+	// VerifyRedirectURI verify client id, redirect uri
+	VerifyRedirectURI(clientID, logoutRedirectURI string) (model.IClient, error, error)
 }
 
 func NewDefaultClientValidator(clientStore store.IClientStore) IClientValidator {
@@ -111,8 +113,8 @@ func (x *DefaultClientValidator) exractClientCredentialsFromBody(ctx *fasthttp.R
 	return
 }
 
-// VerifyClient1 verify client id & secret
-func (x *DefaultClientValidator) VerifyClient1(credential *model.Credential) (model.IClient, error, error) {
+// VerifyCredential verify client id & secret
+func (x *DefaultClientValidator) VerifyCredential(credential *model.Credential) (model.IClient, error, error) {
 	client := x.ClientStore.GetClient(credential.Username)
 
 	if client == nil {
@@ -133,8 +135,8 @@ func (x *DefaultClientValidator) VerifyClient1(credential *model.Credential) (mo
 
 }
 
-// VerifyClient2 verify client id, secret & grant type
-func (x *DefaultClientValidator) VerifyClient2(credential *model.Credential, grantType string) (model.IClient, error, error) {
+// VerifyCredentialGrantType verify client id, secret & grant type
+func (x *DefaultClientValidator) VerifyCredentialGrantType(credential *model.Credential, grantType string) (model.IClient, error, error) {
 	if grantType == "" {
 		err := errors.New(core.Err_invalid_request)
 		errDesc := errors.New("invalid client")
@@ -142,7 +144,7 @@ func (x *DefaultClientValidator) VerifyClient2(credential *model.Credential, gra
 		return nil, err, errDesc
 	}
 
-	client, err, errDesc := x.VerifyClient1(credential)
+	client, err, errDesc := x.VerifyCredential(credential)
 	if err != nil {
 		return nil, err, errDesc
 	}
@@ -156,8 +158,8 @@ func (x *DefaultClientValidator) VerifyClient2(credential *model.Credential, gra
 
 }
 
-// VerifyClient3 verify client id, secret, grant type & scopes
-func (x *DefaultClientValidator) VerifyClient3(credential *model.Credential, grantType, scopesStr string) (model.IClient, error, error) {
+// VerifyCredentialGrantTypeScope verify client id, secret, grant type & scopes
+func (x *DefaultClientValidator) VerifyCredentialGrantTypeScope(credential *model.Credential, grantType, scopesStr string) (model.IClient, error, error) {
 	if scopesStr == "" {
 		err := errors.New(core.Err_invalid_request)
 		errDesc := errors.New("scope is missing")
@@ -165,7 +167,7 @@ func (x *DefaultClientValidator) VerifyClient3(credential *model.Credential, gra
 		return nil, err, errDesc
 	}
 
-	client, err, errDesc := x.VerifyClient2(credential, grantType)
+	client, err, errDesc := x.VerifyCredentialGrantType(credential, grantType)
 	if err != nil {
 		return nil, err, errDesc
 	}
@@ -178,8 +180,8 @@ func (x *DefaultClientValidator) VerifyClient3(credential *model.Credential, gra
 	return client, nil, nil
 }
 
-// VerifyClient4 verify client id & secret, response type, scopes, redirect uri
-func (x *DefaultClientValidator) VerifyClient4(clientID, responseType, redirectURI, scopesStr, state string) (model.IClient, error, error) {
+// VerifyRespTypeRedirectURIScope verify client id & secret, response type, scopes, redirect uri
+func (x *DefaultClientValidator) VerifyRespTypeRedirectURIScope(clientID, responseType, redirectURI, scopesStr string) (model.IClient, error, error) {
 	if clientID == "" {
 		err := errors.New(core.Err_invalid_request)
 		errDesc := errors.New("client id is missing")
@@ -228,6 +230,39 @@ func (x *DefaultClientValidator) VerifyClient4(clientID, responseType, redirectU
 	}
 
 	err, errDesc = x.validateResponseType(client, responseType)
+	if err != nil {
+		return nil, err, errDesc
+	}
+
+	return client, nil, nil
+}
+
+// VerifyRespTypeRedirectURIScope verify client id & redirect uri
+func (x *DefaultClientValidator) VerifyRedirectURI(clientID, redirectURI string) (model.IClient, error, error) {
+	if clientID == "" {
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("client id is missing")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
+	}
+
+	if redirectURI == "" {
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("redirect uri is missing")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
+	}
+
+	client := x.ClientStore.GetClient(clientID)
+
+	if client == nil {
+		err := errors.New(core.Err_invalid_request)
+		errDesc := errors.New("client not exists")
+		log.Warn(errDesc.Error())
+		return nil, err, errDesc
+	}
+
+	err, errDesc := x.validateRedirectUris(client, redirectURI)
 	if err != nil {
 		return nil, err, errDesc
 	}
