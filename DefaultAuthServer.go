@@ -44,6 +44,7 @@ type (
 	}
 
 	DefaultAuthServer struct {
+		Options                *AuthServerOptions
 		AuthCookieName         string
 		AuthorizeEndpoint      string
 		TokenEndpoint          string
@@ -122,6 +123,7 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	}
 
 	return &DefaultAuthServer{
+		Options:                options,
 		AuthCookieName:         options.AuthCookieName,
 		AuthorizeEndpoint:      options.AuthorizeEndpoint,
 		TokenEndpoint:          options.TokenEndpoint,
@@ -397,6 +399,10 @@ func (x *DefaultAuthServer) SetCookie(ctx *fasthttp.RequestCtx, key, value strin
 
 func (x *DefaultAuthServer) DeleteCookie(ctx *fasthttp.RequestCtx, key string) {
 	ctx.Response.Header.DelCookie(key)
+}
+
+func (x *DefaultAuthServer) GetOptions() *AuthServerOptions {
+	return x.Options
 }
 
 // handleClientCredentialsTokenRequest handle client credentials token request
