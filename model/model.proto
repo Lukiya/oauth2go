@@ -31,5 +31,5 @@ message Credential {
 message Resource {
 	string Name = 1; 
 	repeated string Issuers = 2; 
-	repeated string Scopes = 3;
+	repeated string Audiences = 3;
 }
