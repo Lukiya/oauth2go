@@ -352,7 +352,7 @@ func (x *DefaultAuthServer) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 	}
 
 	// delete login cookie
-	x.DeleteCookie(ctx, x.AuthCookieName)
+	x.DelCookie(ctx, x.AuthCookieName)
 
 	// redirect to client
 	targetURL := fmt.Sprintf("%s?%s=%s",
@@ -397,14 +397,15 @@ func (x *DefaultAuthServer) SetCookie(ctx *fasthttp.RequestCtx, key, value strin
 	}
 }
 
-func (x *DefaultAuthServer) DeleteCookie(ctx *fasthttp.RequestCtx, key string) {
+func (x *DefaultAuthServer) DelCookie(ctx *fasthttp.RequestCtx, key string) {
+	ctx.Response.Header.DelCookie(key)
+
 	authCookie := fasthttp.AcquireCookie()
 	authCookie.SetKey(key)
-	// authCookie.SetValue("")
 	authCookie.SetSecure(true)
 	authCookie.SetPath("/")
 	authCookie.SetHTTPOnly(true)
-	authCookie.SetExpire(time.Now().Add(2400 * time.Hour))
+	authCookie.SetExpire(fasthttp.CookieExpireDelete)
 	ctx.Response.Header.SetCookie(authCookie)
 }
 

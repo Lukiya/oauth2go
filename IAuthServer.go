@@ -13,5 +13,5 @@ type IAuthServer interface {
 	GetOptions() *AuthServerOptions
 	GetCookie(ctx *fasthttp.RequestCtx, name string) string
 	SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration)
-	DeleteCookie(ctx *fasthttp.RequestCtx, key string)
+	DelCookie(ctx *fasthttp.RequestCtx, key string)
 }
