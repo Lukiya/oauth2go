@@ -398,7 +398,14 @@ func (x *DefaultAuthServer) SetCookie(ctx *fasthttp.RequestCtx, key, value strin
 }
 
 func (x *DefaultAuthServer) DeleteCookie(ctx *fasthttp.RequestCtx, key string) {
-	ctx.Response.Header.DelCookie(key)
+	authCookie := fasthttp.AcquireCookie()
+	authCookie.SetKey(key)
+	// authCookie.SetValue("")
+	authCookie.SetSecure(true)
+	authCookie.SetPath("/")
+	authCookie.SetHTTPOnly(true)
+	authCookie.SetExpire(time.Now().Add(2400 * time.Hour))
+	ctx.Response.Header.SetCookie(authCookie)
 }
 
 func (x *DefaultAuthServer) GetOptions() *AuthServerOptions {
