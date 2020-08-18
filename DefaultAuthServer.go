@@ -303,8 +303,8 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 
 	// verify client
 	var client model.IClient
-	if grantTypeStr == core.GrantType_AuthorizationCode {
-		// auth code grant doesn't post scopes
+	if grantTypeStr == core.GrantType_AuthorizationCode || grantTypeStr == core.GrantType_RefreshToken {
+		// auth code & refresh grant doesn't require post scopes
 		client, err, errDesc = x.ClientValidator.VerifyCredentialGrantType(credentials, grantTypeStr)
 	} else {
 		// other scopes must post scopes
