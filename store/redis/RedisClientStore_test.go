@@ -13,9 +13,9 @@ func TestRedisClientStore_GetClient(t *testing.T) {
 	var redisConfig *sredis.RedisConfig
 	configProvider := config.NewJsonConfigProvider()
 	configProvider.GetStruct("Redis", &redisConfig)
-	secretEncryptor := rsa.NewRSASecretEncryptor("../../examples/cert/test.key")
-	clientStore := NewRedisClientStore("CLIENTS", secretEncryptor, redisConfig)
+	secretEncryptor := rsa.NewRSASecretEncryptor(`D:\Git\syncfuture\armos\go\pass\cert\private.key`)
+	clientStore := NewRedisClientStore("hub:CLIENTS", secretEncryptor, redisConfig)
 
-	client := clientStore.GetClient("test")
+	client := clientStore.GetClient("amsadmin")
 	assert.NotNil(t, client)
 }
