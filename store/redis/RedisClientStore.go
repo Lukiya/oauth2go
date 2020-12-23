@@ -7,6 +7,7 @@ import (
 	"github.com/Lukiya/oauth2go/security"
 	"github.com/Lukiya/oauth2go/store"
 	redis "github.com/go-redis/redis/v7"
+	log "github.com/syncfuture/go/slog"
 	"github.com/syncfuture/go/sredis"
 	"github.com/syncfuture/go/u"
 )
@@ -27,7 +28,12 @@ func NewRedisClientStore(key string, secretEncryptor security.ISecretEncryptor, 
 
 func (x *RedisClientStore) GetClient(clientID string) model.IClient {
 	jsonBytes, err := x.RedisClient.HGet(x.Key, clientID).Bytes()
-	if u.LogError(err) {
+	if err != nil {
+		if err.Error() == "redis: nil" {
+			log.Warnf("client id: '%s' doesn't exist.", clientID)
+			return nil
+		}
+		log.Error(err)
 		return nil
 	}
 
@@ -37,7 +43,9 @@ func (x *RedisClientStore) GetClient(clientID string) model.IClient {
 		return nil
 	}
 
-	client.Secret = x.SecretEncryptor.DecryptStringToString(client.Secret)
+	if u.IsBase64String(client.Secret) {
+		client.Secret = x.SecretEncryptor.DecryptStringToString(client.Secret)
+	}
 
 	return client
 }
