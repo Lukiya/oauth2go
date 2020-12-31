@@ -5,7 +5,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func writePage(ctx *fasthttp.RequestCtx, view Page) {
+func writePage(ctx *fasthttp.RequestCtx, view page) {
 	ctx.SetContentType(oauth2.ContentType_Html)
-	WritePageTemplate(ctx, view)
+	writePageTemplate(ctx, view)
 }

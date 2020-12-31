@@ -21,7 +21,7 @@ var (
 )
 
 //line views/basepage.qtpl:4
-type Page interface {
+type page interface {
 //line views/basepage.qtpl:4
 	Title() string
 //line views/basepage.qtpl:4
@@ -49,10 +49,10 @@ type Page interface {
 //line views/basepage.qtpl:4
 }
 
-// Page prints a page implementing Page interface.
+// page prints a page implementing page interface.
 
 //line views/basepage.qtpl:14
-func StreamPageTemplate(qw422016 *qt422016.Writer, p Page) {
+func streamPageTemplate(qw422016 *qt422016.Writer, p page) {
 //line views/basepage.qtpl:14
 	qw422016.N().S(`
 <!doctype html>
@@ -96,22 +96,22 @@ func StreamPageTemplate(qw422016 *qt422016.Writer, p Page) {
 }
 
 //line views/basepage.qtpl:35
-func WritePageTemplate(qq422016 qtio422016.Writer, p Page) {
+func writePageTemplate(qq422016 qtio422016.Writer, p page) {
 //line views/basepage.qtpl:35
 	qw422016 := qt422016.AcquireWriter(qq422016)
 //line views/basepage.qtpl:35
-	StreamPageTemplate(qw422016, p)
+	streamPageTemplate(qw422016, p)
 //line views/basepage.qtpl:35
 	qt422016.ReleaseWriter(qw422016)
 //line views/basepage.qtpl:35
 }
 
 //line views/basepage.qtpl:35
-func PageTemplate(p Page) string {
+func pageTemplate(p page) string {
 //line views/basepage.qtpl:35
 	qb422016 := qt422016.AcquireByteBuffer()
 //line views/basepage.qtpl:35
-	WritePageTemplate(qb422016, p)
+	writePageTemplate(qb422016, p)
 //line views/basepage.qtpl:35
 	qs422016 := string(qb422016.B)
 //line views/basepage.qtpl:35
@@ -122,7 +122,7 @@ func PageTemplate(p Page) string {
 }
 
 // Base page implementation. Other pages may inherit from it if they need
-// overriding only certain Page methods
+// overriding only certain page methods
 
 //line views/basepage.qtpl:40
 type basePage struct {
