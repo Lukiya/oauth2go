@@ -120,7 +120,7 @@ func (x *Client) GetRedirectUris() []string {
 	return nil
 }
 
-type TokenRequestInfo struct {
+type TokenInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -133,8 +133,8 @@ type TokenRequestInfo struct {
 	CodeChanllengeMethod string `protobuf:"bytes,6,opt,name=CodeChanllengeMethod,proto3" json:"CodeChanllengeMethod,omitempty"`
 }
 
-func (x *TokenRequestInfo) Reset() {
-	*x = TokenRequestInfo{}
+func (x *TokenInfo) Reset() {
+	*x = TokenInfo{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_model_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -142,13 +142,13 @@ func (x *TokenRequestInfo) Reset() {
 	}
 }
 
-func (x *TokenRequestInfo) String() string {
+func (x *TokenInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TokenRequestInfo) ProtoMessage() {}
+func (*TokenInfo) ProtoMessage() {}
 
-func (x *TokenRequestInfo) ProtoReflect() protoreflect.Message {
+func (x *TokenInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_model_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -160,47 +160,47 @@ func (x *TokenRequestInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TokenRequestInfo.ProtoReflect.Descriptor instead.
-func (*TokenRequestInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use TokenInfo.ProtoReflect.Descriptor instead.
+func (*TokenInfo) Descriptor() ([]byte, []int) {
 	return file_model_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *TokenRequestInfo) GetClientID() string {
+func (x *TokenInfo) GetClientID() string {
 	if x != nil {
 		return x.ClientID
 	}
 	return ""
 }
 
-func (x *TokenRequestInfo) GetScopes() string {
+func (x *TokenInfo) GetScopes() string {
 	if x != nil {
 		return x.Scopes
 	}
 	return ""
 }
 
-func (x *TokenRequestInfo) GetRedirectUri() string {
+func (x *TokenInfo) GetRedirectUri() string {
 	if x != nil {
 		return x.RedirectUri
 	}
 	return ""
 }
 
-func (x *TokenRequestInfo) GetUsername() string {
+func (x *TokenInfo) GetUsername() string {
 	if x != nil {
 		return x.Username
 	}
 	return ""
 }
 
-func (x *TokenRequestInfo) GetCodeChanllenge() string {
+func (x *TokenInfo) GetCodeChanllenge() string {
 	if x != nil {
 		return x.CodeChanllenge
 	}
 	return ""
 }
 
-func (x *TokenRequestInfo) GetCodeChanllengeMethod() string {
+func (x *TokenInfo) GetCodeChanllengeMethod() string {
 	if x != nil {
 		return x.CodeChanllengeMethod
 	}
@@ -389,10 +389,10 @@ func file_model_proto_rawDescGZIP() []byte {
 
 var file_model_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_model_proto_goTypes = []interface{}{
-	(*Client)(nil),           // 0: product.Client
-	(*TokenRequestInfo)(nil), // 1: product.TokenRequestInfo
-	(*Credential)(nil),       // 2: product.Credential
-	(*Resource)(nil),         // 3: product.Resource
+	(*Client)(nil),     // 0: product.Client
+	(*TokenInfo)(nil),  // 1: product.TokenInfo
+	(*Credential)(nil), // 2: product.Credential
+	(*Resource)(nil),   // 3: product.Resource
 }
 var file_model_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -421,7 +421,7 @@ func file_model_proto_init() {
 			}
 		}
 		file_model_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TokenRequestInfo); i {
+			switch v := v.(*TokenInfo); i {
 			case 0:
 				return &v.state
 			case 1:

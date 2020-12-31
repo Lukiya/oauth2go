@@ -9,8 +9,8 @@ import (
 )
 
 type IAuthorizationCodeStore interface {
-	Save(code string, requestInfo *model.TokenRequestInfo)
-	GetThenRemove(code string) *model.TokenRequestInfo
+	Save(code string, requestInfo *model.TokenInfo)
+	GetThenRemove(code string) *model.TokenInfo
 }
 
 func NewDefaultAuthorizationCodeStore(durationSecondes int) IAuthorizationCodeStore {
@@ -31,11 +31,11 @@ type DefaultAuthorizationCodeStore struct {
 // This default in memory store doesn't encrypt request info.
 // Encryption is an option for security enhancement,
 // you can implement your own store to do this.
-func (x *DefaultAuthorizationCodeStore) Save(code string, requestInfo *model.TokenRequestInfo) {
+func (x *DefaultAuthorizationCodeStore) Save(code string, requestInfo *model.TokenInfo) {
 	x.cache.Add(code, x.duration, requestInfo)
 }
 
-func (x *DefaultAuthorizationCodeStore) GetThenRemove(code string) *model.TokenRequestInfo {
+func (x *DefaultAuthorizationCodeStore) GetThenRemove(code string) *model.TokenInfo {
 	cacheItem, err := x.cache.Delete(code)
 	if err == cache2go.ErrKeyNotFound || u.LogError(err) {
 		return nil
@@ -43,5 +43,5 @@ func (x *DefaultAuthorizationCodeStore) GetThenRemove(code string) *model.TokenR
 
 	r := cacheItem.Data()
 
-	return r.(*model.TokenRequestInfo)
+	return r.(*model.TokenInfo)
 }

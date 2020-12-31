@@ -187,7 +187,7 @@ func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.Reques
 		code = x.AuthCodeGenerator.Generate()
 		x.AuthorizationCodeStore.Save(
 			code,
-			&model.TokenRequestInfo{
+			&model.TokenInfo{
 				ClientID:    client.GetID(),
 				Scopes:      scopesStr,
 				RedirectUri: redirectURI,
@@ -233,7 +233,7 @@ func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.Reques
 	code = x.AuthCodeGenerator.Generate()
 	x.AuthorizationCodeStore.Save(
 		code,
-		&model.TokenRequestInfo{
+		&model.TokenInfo{
 			ClientID:             client.GetID(),
 			Scopes:               scopesStr,
 			RedirectUri:          redirectURI,
@@ -500,7 +500,7 @@ func (x *DefaultAuthServer) handleResourceOwnerTokenRequest(ctx *fasthttp.Reques
 	success := x.ResourceOwnerValidator.Verify(username, password)
 	if success {
 		// pass, issue token
-		x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, &model.TokenRequestInfo{
+		x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, &model.TokenInfo{
 			ClientID: client.GetID(),
 			Scopes:   scopesStr,
 			Username: username,
@@ -559,7 +559,7 @@ func (x *DefaultAuthServer) handleLogoutRequest(ctx *fasthttp.RequestCtx, status
 }
 
 // issueTokenByRequestInfo issue access token and refresh token
-func (x *DefaultAuthServer) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, tokenRequestInfo *model.TokenRequestInfo) {
+func (x *DefaultAuthServer) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, tokenRequestInfo *model.TokenInfo) {
 	// issue token
 	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,

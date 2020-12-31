@@ -10,7 +10,7 @@ import (
 
 func TestDefaultAuthorizationCodeStore(t *testing.T) {
 	code := "abc"
-	a := &model.TokenRequestInfo{ClientID: "test"}
+	a := &model.TokenInfo{ClientID: "test"}
 	store := NewDefaultAuthorizationCodeStore(3)
 	store.Save(code, a)
 
@@ -20,7 +20,7 @@ func TestDefaultAuthorizationCodeStore(t *testing.T) {
 
 func TestDefaultAuthorizationCodeStore_Expire(t *testing.T) {
 	code := "def"
-	a := &model.TokenRequestInfo{ClientID: "test"}
+	a := &model.TokenInfo{ClientID: "test"}
 	store := NewDefaultAuthorizationCodeStore(1)
 	store.Save(code, a)
 

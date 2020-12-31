@@ -17,7 +17,7 @@ func TestRedisTokenStore(t *testing.T) {
 	secretEncryptor := rsa.NewRSASecretEncryptor("../../examples/cert/test.key")
 	_tokenStore := NewRedisTokenStore("rt:", secretEncryptor, redisConfig)
 
-	a := &model.TokenRequestInfo{
+	a := &model.TokenInfo{
 		ClientID: "test",
 	}
 	refreshToken := "abcdefg"

@@ -14,12 +14,18 @@ message Client {
     repeated string RedirectUris  = 7;
 }
 
-message TokenRequestInfo {
+message TokenInfo {
+    // `json:"ci,omitempty"`
     string ClientID = 1; 
+    // `json:"sc,omitempty"`
     string Scopes = 2; 
+    // `json:"ru,omitempty"`
     string RedirectUri = 3; 
+    // `json:"un,omitempty"`
     string Username = 4; 
+    // `json:"cc,omitempty"`
     string CodeChanllenge = 5; 
+    // `json:"ccm,omitempty"`
     string CodeChanllengeMethod = 6; 
 }
 
