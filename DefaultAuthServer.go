@@ -438,8 +438,8 @@ func (x *DefaultAuthServer) handleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 	clientID := string(ctx.FormValue(core.Form_ClientID))
 	redirectUri := string(ctx.FormValue(core.Form_RedirectUri))
 
-	tokenRequestInfo := x.AuthorizationCodeStore.GetThenRemove(code)
-	if tokenRequestInfo == nil {
+	tokenInfo := x.AuthorizationCodeStore.GetThenRemove(code)
+	if tokenInfo == nil {
 		err := errors.New(core.Err_invalid_request)
 		errDesc := errors.New("invalid authorization code")
 		log.Warn(errDesc.Error())
@@ -447,17 +447,17 @@ func (x *DefaultAuthServer) handleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 		return
 	}
 
-	if client.GetID() != clientID || clientID != tokenRequestInfo.ClientID {
+	if client.GetID() != clientID || clientID != tokenInfo.ClientID {
 		err := errors.New(core.Err_invalid_request)
-		errDesc := fmt.Errorf("client id doesn't match, original: '%s', current: '%s'", tokenRequestInfo.ClientID, client.GetID())
+		errDesc := fmt.Errorf("client id doesn't match, original: '%s', current: '%s'", tokenInfo.ClientID, client.GetID())
 		log.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
 
-	if redirectUri != tokenRequestInfo.RedirectUri {
+	if redirectUri != tokenInfo.RedirectUri {
 		err := errors.New(core.Err_invalid_request)
-		errDesc := fmt.Errorf("redirect uri doesn't match, original: '%s', current: '%s'", tokenRequestInfo.RedirectUri, redirectUri)
+		errDesc := fmt.Errorf("redirect uri doesn't match, original: '%s', current: '%s'", tokenInfo.RedirectUri, redirectUri)
 		log.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
@@ -466,7 +466,7 @@ func (x *DefaultAuthServer) handleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 	// pkce check
 	if !x.PkceRequired {
 		// issue token
-		x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, tokenRequestInfo)
+		x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, tokenInfo)
 		return
 	}
 
@@ -480,7 +480,7 @@ func (x *DefaultAuthServer) handleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 		return
 	}
 
-	if !x.PkceValidator.Verify(codeVierifier, tokenRequestInfo.CodeChanllenge, tokenRequestInfo.CodeChanllengeMethod) {
+	if !x.PkceValidator.Verify(codeVierifier, tokenInfo.CodeChanllenge, tokenInfo.CodeChanllengeMethod) {
 		err := errors.New(core.Err_invalid_grant)
 		errDesc := errors.New("code verifier is invalid")
 		log.Warn(errDesc.Error())
@@ -489,7 +489,7 @@ func (x *DefaultAuthServer) handleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 	}
 
 	// issue token
-	x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, tokenRequestInfo)
+	x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, tokenInfo)
 }
 
 // handleResourceOwnerTokenRequest handle resource owner token request
@@ -524,8 +524,8 @@ func (x *DefaultAuthServer) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, 
 		return
 	}
 
-	var tokenRequestInfo = x.TokenStore.GetTokenRequestInfo(refreshToken)
-	if tokenRequestInfo == nil {
+	var tokenInfo = x.TokenStore.GetTokenRequestInfo(refreshToken)
+	if tokenInfo == nil {
 		err := errors.New(core.Err_invalid_grant)
 		errDesc := errors.New("refresh token is invalid or expired or revoked")
 		log.Warn(errDesc.Error())
@@ -533,16 +533,16 @@ func (x *DefaultAuthServer) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, 
 		return
 	}
 
-	if client.GetID() != tokenRequestInfo.ClientID {
+	if client.GetID() != tokenInfo.ClientID {
 		err := errors.New(core.Err_invalid_request)
-		errDesc := fmt.Errorf("client id doesn't match, original: '%s', current: '%s'", tokenRequestInfo.ClientID, client.GetID())
+		errDesc := fmt.Errorf("client id doesn't match, original: '%s', current: '%s'", tokenInfo.ClientID, client.GetID())
 		log.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
 
 	// issue token
-	x.issueTokenByRequestInfo(ctx, core.GrantType_RefreshToken, client, tokenRequestInfo)
+	x.issueTokenByRequestInfo(ctx, core.GrantType_RefreshToken, client, tokenInfo)
 }
 
 func (x *DefaultAuthServer) handleLogoutRequest(ctx *fasthttp.RequestCtx, statusCode int, err, errDesc error) {
@@ -559,14 +559,14 @@ func (x *DefaultAuthServer) handleLogoutRequest(ctx *fasthttp.RequestCtx, status
 }
 
 // issueTokenByRequestInfo issue access token and refresh token
-func (x *DefaultAuthServer) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, tokenRequestInfo *model.TokenInfo) {
+func (x *DefaultAuthServer) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, tokenInfo *model.TokenInfo) {
 	// issue token
 	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,
 		grantType,
 		client,
-		strings.Split(tokenRequestInfo.Scopes, core.Seperator_Scope),
-		tokenRequestInfo.Username,
+		strings.Split(tokenInfo.Scopes, core.Seperator_Scope),
+		tokenInfo.Username,
 	)
 	if err != nil {
 		x.writeError(ctx, http.StatusBadRequest, errors.New(core.Err_server_error), err)
@@ -583,11 +583,11 @@ func (x *DefaultAuthServer) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, gr
 	if allowRefresh {
 		// allowed to use refresh token
 		var refreshToken = x.TokenGenerator.GenerateRefreshToken()
-		x.TokenStore.SaveRefreshToken(refreshToken, tokenRequestInfo, client.GetRefreshTokenExpireSeconds())
-		x.writeToken(ctx, token, tokenRequestInfo.Scopes, client.GetAccessTokenExpireSeconds(), refreshToken)
+		x.TokenStore.SaveRefreshToken(refreshToken, tokenInfo, client.GetRefreshTokenExpireSeconds())
+		x.writeToken(ctx, token, tokenInfo.Scopes, client.GetAccessTokenExpireSeconds(), refreshToken)
 	} else {
 		// not allowed to use refresh token
-		x.writeToken(ctx, token, tokenRequestInfo.Scopes, client.GetAccessTokenExpireSeconds(), "")
+		x.writeToken(ctx, token, tokenInfo.Scopes, client.GetAccessTokenExpireSeconds(), "")
 	}
 }
 
