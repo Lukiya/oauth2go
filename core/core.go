@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"sync"
 
 	"github.com/gorilla/securecookie"
@@ -101,11 +102,11 @@ func ToSHA256Base64URL(in string) string {
 	return base64.RawURLEncoding.EncodeToString(r)
 }
 
-// // GenerateID _
-// func GenerateID() string {
-// 	a, _ := _idGenerator.NextID()
-// 	return fmt.Sprintf("%x", a)
-// }
+// GenerateID _
+func GenerateID() string {
+	a, _ := _idGenerator.NextID()
+	return fmt.Sprintf("%x", a)
+}
 
 func Redirect(ctx *fasthttp.RequestCtx, url string) {
 	ctx.Response.Header.Add("Location", url)

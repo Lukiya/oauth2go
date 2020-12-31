@@ -31,8 +31,3 @@ type loginPage struct {
 {% endif %}
 </div>
 {% endfunc %}
-
-{% func (p *loginPage) Scripts() %}
-<script src="https://www.google.com/recaptcha/api.js?render=6LcATMAUAAAAAFKGtk5ki6zJ9gnZguO_58fJUNS6"></script>
-<script>grecaptcha.ready(function () {grecaptcha.execute('6LcATMAUAAAAAFKGtk5ki6zJ9gnZguO_58fJUNS6', {action: 'login'}).then(function (token) {$("#Token").val(token);});});</script>
-{% endfunc %}

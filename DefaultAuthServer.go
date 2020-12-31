@@ -24,6 +24,7 @@ import (
 type (
 	AuthServerOptions struct {
 		AuthCookieName         string
+		SurferCookieName       string
 		AuthorizeEndpoint      string
 		TokenEndpoint          string
 		EndSessionEndpoint     string
@@ -81,7 +82,10 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 		log.Fatal("CookieManager cannot be nil")
 	}
 	if options.AuthCookieName == "" {
-		options.AuthCookieName = "OAuth"
+		options.AuthCookieName = "go.auth"
+	}
+	if options.SurferCookieName == "" {
+		options.SurferCookieName = "go.surfer"
 	}
 	if options.AuthorizeEndpoint == "" {
 		options.AuthorizeEndpoint = "/connect/authorize"
@@ -149,6 +153,7 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
 	scopesStr := string(ctx.FormValue(core.Form_Scope))
 	state := string(ctx.FormValue(core.Form_State))
+	surferID := x.getSurferID(ctx)
 
 	// verify client
 	client, err, errDesc := x.ClientValidator.VerifyRespTypeRedirectURIScope(
@@ -172,14 +177,14 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 
 	switch respType {
 	case core.ResponseType_Code:
-		x.AuthorizationCodeRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
+		x.AuthorizationCodeRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username, surferID)
 	case core.ResponseType_Token:
-		x.ImplicitTokenRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
+		x.ImplicitTokenRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username, surferID)
 	}
 }
 
 // AuthorizationCodeRequestHandler handle authorize code request
-func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
+func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username, surferID string) {
 	var code string
 	// pkce check
 	if !x.PkceRequired {
@@ -258,7 +263,7 @@ func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.Reques
 }
 
 // AuthorizationCodeRequestHandler handle implicit token request
-func (x *DefaultAuthServer) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
+func (x *DefaultAuthServer) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username, surferID string) {
 	// user already logged in, issue token
 	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,
@@ -616,4 +621,14 @@ func (x *DefaultAuthServer) writeError(ctx *fasthttp.RequestCtx, statusCode int,
 	ctx.Response.Header.Add(core.Header_Pragma, core.Header_Pragma_Value)
 
 	ctx.WriteString(fmt.Sprintf(core.Format_Error, err.Error(), errDesc.Error()))
+}
+
+// getSurferID get surfer id
+func (x *DefaultAuthServer) getSurferID(ctx *fasthttp.RequestCtx) (surferID string) {
+	surferID = x.GetCookie(ctx, x.Options.SurferCookieName)
+	if surferID == "" {
+		surferID = core.GenerateID()
+		x.SetCookie(ctx, x.Options.SurferCookieName, surferID, 8784*time.Hour)
+	}
+	return
 }

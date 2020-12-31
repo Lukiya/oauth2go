@@ -7,5 +7,5 @@ import (
 
 func writePage(ctx *fasthttp.RequestCtx, view page) {
 	ctx.SetContentType(oauth2.ContentType_Html)
-	writePageTemplate(ctx, view)
+	writepageTemplate(ctx, view)
 }
