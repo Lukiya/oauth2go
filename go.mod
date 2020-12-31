@@ -13,6 +13,5 @@ require (
 	github.com/syncfuture/go v1.2.2
 	github.com/valyala/fasthttp v1.17.0
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
-	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.25.0
 )
