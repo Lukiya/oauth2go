@@ -153,7 +153,7 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
 	scopesStr := string(ctx.FormValue(core.Form_Scope))
 	state := string(ctx.FormValue(core.Form_State))
-	surferID := x.getSurferID(ctx)
+	// surferID := x.getSurferID(ctx)
 
 	// verify client
 	client, err, errDesc := x.ClientValidator.VerifyRespTypeRedirectURIScope(
@@ -177,14 +177,14 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 
 	switch respType {
 	case core.ResponseType_Code:
-		x.AuthorizationCodeRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username, surferID)
+		x.AuthorizationCodeRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
 	case core.ResponseType_Token:
-		x.ImplicitTokenRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username, surferID)
+		x.ImplicitTokenRequestHandler(ctx, client, respType, scopesStr, redirectURI, state, username)
 	}
 }
 
 // AuthorizationCodeRequestHandler handle authorize code request
-func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username, surferID string) {
+func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
 	var code string
 	// pkce check
 	if !x.PkceRequired {
@@ -263,7 +263,7 @@ func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.Reques
 }
 
 // AuthorizationCodeRequestHandler handle implicit token request
-func (x *DefaultAuthServer) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username, surferID string) {
+func (x *DefaultAuthServer) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
 	// user already logged in, issue token
 	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,
