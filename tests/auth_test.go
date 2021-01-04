@@ -13,7 +13,6 @@ import (
 	"github.com/Lukiya/oauth2go/security/rsa"
 	"github.com/Lukiya/oauth2go/store/redis"
 	"github.com/Lukiya/oauth2go/token"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/securecookie"
 	"github.com/syncfuture/go/config"
 	"github.com/syncfuture/go/rsautil"
@@ -59,11 +58,11 @@ func newClaimsGenerator() token.ITokenClaimsGenerator {
 
 type MyClaimsGenerator struct{}
 
-func (x *MyClaimsGenerator) Generate(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, scopes []string, username string) *jwt.MapClaims {
+func (x *MyClaimsGenerator) Generate(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, scopes []string, username string) *map[string]interface{} {
 	utcNow := time.Now().UTC()
 	exp := utcNow.Add(time.Duration(client.GetAccessTokenExpireSeconds()) * time.Second).Unix()
 
-	r := &jwt.MapClaims{
+	r := &map[string]interface{}{
 		"name": username,
 		"iss":  "https://p.ecp.com",
 		"aud":  strings.Join(scopes, core.Seperator_Scope),

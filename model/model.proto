@@ -10,8 +10,9 @@ message Client {
     int32 AccessTokenExpireSeconds  = 3;
     int32 RefreshTokenExpireSeconds  = 4;
     repeated string Grants  = 5;
-    repeated string Scopes  = 6;
-    repeated string RedirectUris  = 7;
+    repeated string Audiences  = 6;
+    repeated string Scopes  = 7;
+    repeated string RedirectUris  = 8;
 }
 
 message TokenInfo {

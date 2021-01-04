@@ -14,8 +14,8 @@ import (
 	"github.com/Lukiya/oauth2go/security"
 	"github.com/Lukiya/oauth2go/store"
 	"github.com/Lukiya/oauth2go/token"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/securecookie"
+	"github.com/pascaldekloe/jwt"
 	log "github.com/syncfuture/go/slog"
 	"github.com/syncfuture/go/u"
 	"github.com/valyala/fasthttp"
@@ -118,7 +118,7 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	if options.TokenGenerator == nil {
 		options.TokenGenerator = token.NewDefaultTokenGenerator(
 			options.PrivateKey,
-			jwt.SigningMethodPS256,
+			jwt.PS256,
 			options.ClaimsGenerator,
 		)
 	}

@@ -13,7 +13,6 @@ import (
 	"github.com/Lukiya/oauth2go/server"
 	"github.com/Lukiya/oauth2go/store/redis"
 	"github.com/Lukiya/oauth2go/token"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/securecookie"
 	"github.com/syncfuture/go/config"
 	"github.com/syncfuture/go/rsautil"
@@ -45,18 +44,20 @@ func newClaimsGenerator() token.ITokenClaimsGenerator {
 
 type myClaimsGenerator struct{}
 
-func (x *myClaimsGenerator) Generate(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, scopes []string, username string) *jwt.MapClaims {
+func (x *myClaimsGenerator) Generate(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, scopes []string, username string) *map[string]interface{} {
 	utcNow := time.Now().UTC()
 	exp := utcNow.Add(time.Duration(client.GetAccessTokenExpireSeconds()) * time.Second).Unix()
 
-	r := jwt.MapClaims{
+	r := map[string]interface{}{
 		"name": username,
 		"iss":  _urlProvider.RenderURLCache("{{URI 'pass'}}"),
-		"aud":  _urlProvider.RenderURLCache("{{URI 'api'}}"),
 		"exp":  exp,
 		"iat":  utcNow.Unix(),
 		"nbf":  utcNow.Unix(),
 	}
+
+	r["aud"] = []string{"testapi"}
+	r["scope"] = []string{"testapi.user", "testapi.order"}
 
 	if grantType == oauth2core.GrantType_Client {
 		r["name"] = client.GetID()
