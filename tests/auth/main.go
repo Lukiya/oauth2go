@@ -89,7 +89,7 @@ func main() {
 	log.Init(_configProvider)
 	var redisConfig *sredis.RedisConfig
 	_configProvider.GetStruct("Redis", &redisConfig)
-	_urlProvider = surl.NewRedisURLProvider("test:URIS", redisConfig)
+	_urlProvider = surl.NewRedisURLProvider("t:URIS", redisConfig)
 
 	_configProvider.GetStruct("AuthServer", &_options)
 	if _options == nil {
@@ -101,7 +101,7 @@ func main() {
 	u.LogFaltal(err)
 	secretEncryptor := rsa.NewRSASecretEncryptor(_options.PrivateKeyPath)
 	_options.CookieManager = securecookie.New([]byte(_options.HashKey), []byte(_options.BlockKey))
-	_options.ClientStore = redis.NewRedisClientStore("test:Clients", secretEncryptor, redisConfig)
+	_options.ClientStore = redis.NewRedisClientStore("t:Clients", secretEncryptor, redisConfig)
 	_options.TokenStore = redis.NewRedisTokenStore("rt:", secretEncryptor, redisConfig)
 	_options.ClaimsGenerator = newClaimsGenerator()
 	_options.ResourceOwnerValidator = newResourceOwnerValidator()
