@@ -493,6 +493,12 @@ func (x *DefaultAuthServer) handleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 		return
 	}
 
+	oldRefreshToken := string(ctx.FormValue(core.Form_RefreshToken))
+	if oldRefreshToken != "" {
+		// received old refresh token, revoke it
+		x.TokenStore.RemoveRefreshToken(oldRefreshToken)
+	}
+
 	// issue token
 	x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, tokenInfo)
 }
@@ -529,7 +535,7 @@ func (x *DefaultAuthServer) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, 
 		return
 	}
 
-	var tokenInfo = x.TokenStore.GetTokenRequestInfo(refreshToken)
+	var tokenInfo = x.TokenStore.GetTokenInfo(refreshToken)
 	if tokenInfo == nil {
 		err := errors.New(core.Err_invalid_grant)
 		errDesc := errors.New("refresh token is invalid or expired or revoked")

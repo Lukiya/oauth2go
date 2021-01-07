@@ -26,7 +26,7 @@ func TestRedisTokenStore(t *testing.T) {
 		a,
 		30,
 	)
-	b := _tokenStore.GetTokenRequestInfo(refreshToken)
+	b := _tokenStore.GetTokenInfo(refreshToken)
 
 	assert.Equal(t, a.ClientID, b.ClientID)
 	t.Log(b.ClientID)

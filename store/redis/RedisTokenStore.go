@@ -36,9 +36,14 @@ func (x *RedisTokenStore) SaveRefreshToken(refreshToken string, requestInfo *mod
 	encodedRefreshToken := x.SecretEncryptor.EncryptBytesToString(bytes)
 
 	// save to redis
-	x.RedisClient.Set(x.Prefix+refreshToken, encodedRefreshToken, time.Second*time.Duration(expireSeconds))
+	err = x.RedisClient.Set(x.Prefix+refreshToken, encodedRefreshToken, time.Second*time.Duration(expireSeconds)).Err()
+	u.LogError(err)
 }
-func (x *RedisTokenStore) GetTokenRequestInfo(refreshToken string) *model.TokenInfo {
+func (x *RedisTokenStore) RemoveRefreshToken(refreshToken string) {
+	err := x.RedisClient.Del(x.Prefix + refreshToken).Err()
+	u.LogError(err)
+}
+func (x *RedisTokenStore) GetTokenInfo(refreshToken string) *model.TokenInfo {
 	key := x.Prefix + refreshToken
 
 	// get from redis
