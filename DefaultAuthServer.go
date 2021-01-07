@@ -23,8 +23,8 @@ import (
 
 type (
 	AuthServerOptions struct {
-		AuthCookieName         string
-		SurferCookieName       string
+		AuthCookieName string
+		// SurferCookieName       string
 		AuthorizeEndpoint      string
 		TokenEndpoint          string
 		EndSessionEndpoint     string
@@ -84,9 +84,9 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	if options.AuthCookieName == "" {
 		options.AuthCookieName = "go.auth"
 	}
-	if options.SurferCookieName == "" {
-		options.SurferCookieName = "go.surfer"
-	}
+	// if options.SurferCookieName == "" {
+	// 	options.SurferCookieName = "go.surfer"
+	// }
 	if options.AuthorizeEndpoint == "" {
 		options.AuthorizeEndpoint = "/connect/authorize"
 	}
@@ -623,12 +623,12 @@ func (x *DefaultAuthServer) writeError(ctx *fasthttp.RequestCtx, statusCode int,
 	ctx.WriteString(fmt.Sprintf(core.Format_Error, err.Error(), errDesc.Error()))
 }
 
-// getSurferID get surfer id
-func (x *DefaultAuthServer) getSurferID(ctx *fasthttp.RequestCtx) (surferID string) {
-	surferID = x.GetCookie(ctx, x.Options.SurferCookieName)
-	if surferID == "" {
-		surferID = core.GenerateID()
-		x.SetCookie(ctx, x.Options.SurferCookieName, surferID, 8784*time.Hour)
-	}
-	return
-}
+// // getSurferID get surfer id
+// func (x *DefaultAuthServer) getSurferID(ctx *fasthttp.RequestCtx) (surferID string) {
+// 	surferID = x.GetCookie(ctx, x.Options.SurferCookieName)
+// 	if surferID == "" {
+// 		surferID = core.GenerateID()
+// 		x.SetCookie(ctx, x.Options.SurferCookieName, surferID, 8784*time.Hour)
+// 	}
+// 	return
+// }

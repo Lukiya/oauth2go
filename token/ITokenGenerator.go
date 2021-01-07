@@ -32,6 +32,11 @@ func (x *DefaultTokenGenerator) GenerateAccessToken(ctx *fasthttp.RequestCtx, gr
 	claims := new(jwt.Claims)
 	claims.KeyID = core.GenerateID()
 	claims.Set = *x.ClaimsGenerator.Generate(ctx, grantType, client, scopes, username)
+	if subValue, ok := claims.Set["sub"]; ok {
+		if sub, b := subValue.(string); b {
+			claims.Subject = sub
+		}
+	}
 
 	token, err := claims.RSASign(x.SigningAlgorithm, x.PrivateKey)
 	return string(token), err
