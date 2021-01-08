@@ -113,6 +113,7 @@ func main() {
 	webServer.Post(_options.TokenEndpoint, _authServer.TokenRequestHandler)
 	// end session
 	webServer.Get(_options.EndSessionEndpoint, _authServer.EndSessionRequestHandler)
+	webServer.Post(_options.EndSessionEndpoint, _authServer.ClearTokenRequestHandler)
 	// home
 	webServer.Get("/", homePageGet)
 	// login

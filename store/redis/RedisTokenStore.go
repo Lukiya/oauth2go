@@ -43,7 +43,7 @@ func (x *RedisTokenStore) RemoveRefreshToken(refreshToken string) {
 	err := x.RedisClient.Del(x.Prefix + refreshToken).Err()
 	u.LogError(err)
 }
-func (x *RedisTokenStore) GetTokenInfo(refreshToken string) *model.TokenInfo {
+func (x *RedisTokenStore) GetAndRemoveTokenInfo(refreshToken string) *model.TokenInfo {
 	key := x.Prefix + refreshToken
 
 	// get from redis

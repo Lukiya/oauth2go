@@ -84,9 +84,6 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	if options.AuthCookieName == "" {
 		options.AuthCookieName = "go.auth"
 	}
-	// if options.SurferCookieName == "" {
-	// 	options.SurferCookieName = "go.surfer"
-	// }
 	if options.AuthorizeEndpoint == "" {
 		options.AuthorizeEndpoint = "/connect/authorize"
 	}
@@ -342,6 +339,7 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	}
 }
 
+// EndSessionRequestHandler handle end session request
 func (x *DefaultAuthServer) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 	clientID := string(ctx.FormValue(core.Form_ClientID))
 	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
@@ -366,6 +364,29 @@ func (x *DefaultAuthServer) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 		url.QueryEscape(state),
 	)
 	core.Redirect(ctx, targetURL)
+}
+
+// ClearTokenHandler handle clear token request
+func (x *DefaultAuthServer) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
+	credential := &model.Credential{
+		Username: string(ctx.FormValue(core.Form_ClientID)),
+		Password: string(ctx.FormValue(core.Form_ClientSecret)),
+	}
+
+	// verify client
+	_, err, errDesc := x.ClientValidator.VerifyCredential(credential)
+	if err != nil {
+		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
+		return
+	}
+	oldRefreshToken := string(ctx.FormValue(core.Form_RefreshToken))
+	if oldRefreshToken == "" {
+		x.writeError(ctx, http.StatusBadRequest, errors.New("missing refresh token"), nil)
+		return
+	}
+
+	// remove refresh token
+	x.TokenStore.RemoveRefreshToken(oldRefreshToken)
 }
 
 func (x *DefaultAuthServer) GetCookie(ctx *fasthttp.RequestCtx, name string) string {
@@ -535,7 +556,7 @@ func (x *DefaultAuthServer) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, 
 		return
 	}
 
-	var tokenInfo = x.TokenStore.GetTokenInfo(refreshToken)
+	var tokenInfo = x.TokenStore.GetAndRemoveTokenInfo(refreshToken)
 	if tokenInfo == nil {
 		err := errors.New(core.Err_invalid_grant)
 		errDesc := errors.New("refresh token is invalid or expired or revoked")
