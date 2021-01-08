@@ -7,8 +7,10 @@ import (
 )
 
 const (
-	_get  = "GET"
-	_post = "POST"
+	_get    = "GET"
+	_post   = "POST"
+	_put    = "PUT"
+	_delete = "DELETE"
 )
 
 func NewWebServer() IWebServer {
@@ -27,6 +29,12 @@ func (x *defaultRouter) Get(path string, handler fasthttp.RequestHandler) {
 }
 func (x *defaultRouter) Post(path string, handler fasthttp.RequestHandler) {
 	x.addSubRoutes(path, _post, handler)
+}
+func (x *defaultRouter) Put(path string, handler fasthttp.RequestHandler) {
+	x.addSubRoutes(path, _put, handler)
+}
+func (x *defaultRouter) Delete(path string, handler fasthttp.RequestHandler) {
+	x.addSubRoutes(path, _delete, handler)
 }
 
 func (x *defaultRouter) addSubRoutes(path, method string, handler fasthttp.RequestHandler) {

@@ -7,6 +7,8 @@ import (
 type IWebServer interface {
 	Get(path string, handler fasthttp.RequestHandler)
 	Post(path string, handler fasthttp.RequestHandler)
+	Put(path string, handler fasthttp.RequestHandler)
+	Delete(path string, handler fasthttp.RequestHandler)
 	ServeFiles(handler fasthttp.RequestHandler)
 	Serve(ctx *fasthttp.RequestCtx)
 }
