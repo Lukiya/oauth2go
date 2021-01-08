@@ -8,13 +8,15 @@ import (
 	"github.com/syncfuture/go/u"
 )
 
+const _authCodeKey = "AuthCode"
+
 type IAuthorizationCodeStore interface {
 	Save(code string, requestInfo *model.TokenInfo)
 	GetThenRemove(code string) *model.TokenInfo
 }
 
 func NewDefaultAuthorizationCodeStore(durationSecondes int) IAuthorizationCodeStore {
-	cache := cache2go.Cache("AuthCode")
+	cache := cache2go.Cache(_authCodeKey)
 
 	return &DefaultAuthorizationCodeStore{
 		cache:    cache,
@@ -30,7 +32,7 @@ type DefaultAuthorizationCodeStore struct {
 // Save save request info to memory.
 // This default in memory store doesn't encrypt request info.
 // Encryption is an option for security enhancement,
-// you can implement your own store to do this.
+// you can implement your own store to do that.
 func (x *DefaultAuthorizationCodeStore) Save(code string, requestInfo *model.TokenInfo) {
 	x.cache.Add(code, x.duration, requestInfo)
 }

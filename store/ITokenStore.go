@@ -7,5 +7,5 @@ import (
 type ITokenStore interface {
 	RemoveRefreshToken(refreshToken string)
 	SaveRefreshToken(refreshToken string, requestInfo *model.TokenInfo, expireSeconds int32)
-	GetAndRemoveTokenInfo(refreshToken string) *model.TokenInfo
+	GetThenRemoveTokenInfo(refreshToken string) *model.TokenInfo
 }

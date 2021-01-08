@@ -36,6 +36,7 @@ type (
 		ClientStore            store.IClientStore
 		TokenStore             store.ITokenStore
 		AuthorizationCodeStore store.IAuthorizationCodeStore
+		ClientStateStore       store.IClientStateStore
 		ClientValidator        security.IClientValidator
 		PkceValidator          security.IPkceValidator
 		ResourceOwnerValidator security.IResourceOwnerValidator
@@ -57,6 +58,7 @@ type (
 		ClientStore            store.IClientStore
 		TokenStore             store.ITokenStore
 		AuthorizationCodeStore store.IAuthorizationCodeStore
+		ClientStateStore       store.IClientStateStore
 		ClientValidator        security.IClientValidator
 		PkceValidator          security.IPkceValidator
 		ResourceOwnerValidator security.IResourceOwnerValidator
@@ -103,6 +105,9 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	if options.AuthorizationCodeStore == nil {
 		options.AuthorizationCodeStore = store.NewDefaultAuthorizationCodeStore(180)
 	}
+	if options.ClientStateStore == nil {
+		options.ClientStateStore = store.NewDefaultClientStateStore(180)
+	}
 	if options.ClientValidator == nil {
 		options.ClientValidator = security.NewDefaultClientValidator(options.ClientStore)
 	}
@@ -135,6 +140,7 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 		ClientStore:            options.ClientStore,
 		TokenStore:             options.TokenStore,
 		AuthorizationCodeStore: options.AuthorizationCodeStore,
+		ClientStateStore:       options.ClientStateStore,
 		ClientValidator:        options.ClientValidator,
 		ResourceOwnerValidator: options.ResourceOwnerValidator,
 		AuthCodeGenerator:      options.AuthCodeGenerator,
@@ -343,7 +349,6 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 func (x *DefaultAuthServer) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 	clientID := string(ctx.FormValue(core.Form_ClientID))
 	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
-	state := string(ctx.FormValue(core.Form_State))
 	// verify client
 	_, err, errDesc := x.ClientValidator.VerifyRedirectURI(
 		clientID,
@@ -354,20 +359,45 @@ func (x *DefaultAuthServer) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	// save client state for clear token verification
+	state := string(ctx.FormValue(core.Form_State))
+	endSessionID := core.GenerateID()
+	if state != "" {
+		x.ClientStateStore.Save(clientID, endSessionID, state)
+	}
+
 	// delete login cookie
 	x.DelCookie(ctx, x.AuthCookieName)
 
 	// redirect to client
-	targetURL := fmt.Sprintf("%s?%s=%s",
+	targetURL := fmt.Sprintf("%s?%s=%s&%s=%s",
 		redirectURI,
 		core.Form_State,
 		url.QueryEscape(state),
+		core.Form_EndSessionID,
+		url.QueryEscape(endSessionID),
 	)
 	core.Redirect(ctx, targetURL)
 }
 
 // ClearTokenHandler handle clear token request
 func (x *DefaultAuthServer) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
+	state := string(ctx.FormValue(core.Form_State))
+	if state == "" {
+		x.writeError(ctx, http.StatusBadRequest, errors.New("missing state"), nil)
+		return
+	}
+	endSessionID := string(ctx.FormValue(core.Form_EndSessionID))
+	if endSessionID == "" {
+		x.writeError(ctx, http.StatusBadRequest, errors.New("missing es_id"), nil)
+		return
+	}
+	oldRefreshToken := string(ctx.FormValue(core.Form_RefreshToken))
+	if oldRefreshToken == "" {
+		x.writeError(ctx, http.StatusBadRequest, errors.New("missing refresh token"), nil)
+		return
+	}
+
 	credential := &model.Credential{
 		Username: string(ctx.FormValue(core.Form_ClientID)),
 		Password: string(ctx.FormValue(core.Form_ClientSecret)),
@@ -379,9 +409,11 @@ func (x *DefaultAuthServer) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
-	oldRefreshToken := string(ctx.FormValue(core.Form_RefreshToken))
-	if oldRefreshToken == "" {
-		x.writeError(ctx, http.StatusBadRequest, errors.New("missing refresh token"), nil)
+
+	// verify state
+	storedState := x.ClientStateStore.GetThenRemove(credential.Username, endSessionID)
+	if storedState == "" || storedState != state {
+		x.writeError(ctx, http.StatusBadRequest, errors.New("invalid state"), nil)
 		return
 	}
 
@@ -556,7 +588,7 @@ func (x *DefaultAuthServer) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, 
 		return
 	}
 
-	var tokenInfo = x.TokenStore.GetAndRemoveTokenInfo(refreshToken)
+	var tokenInfo = x.TokenStore.GetThenRemoveTokenInfo(refreshToken)
 	if tokenInfo == nil {
 		err := errors.New(core.Err_invalid_grant)
 		errDesc := errors.New("refresh token is invalid or expired or revoked")

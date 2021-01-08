@@ -39,6 +39,7 @@ const (
 	Form_RedirectUri              = "redirect_uri"
 	Form_ReturnUrl                = "returnUrl"
 	Form_State                    = "state"
+	Form_EndSessionID             = "es_id"
 	Form_Scope                    = "scope"
 	Form_Code                     = "code"
 	Form_Username                 = "username"
