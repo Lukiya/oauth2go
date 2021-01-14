@@ -36,7 +36,7 @@ type (
 		ClientStore            store.IClientStore
 		TokenStore             store.ITokenStore
 		AuthorizationCodeStore store.IAuthorizationCodeStore
-		ClientStateStore       store.IClientStateStore
+		StateStore             store.IStateStore
 		ClientValidator        security.IClientValidator
 		PkceValidator          security.IPkceValidator
 		ResourceOwnerValidator security.IResourceOwnerValidator
@@ -58,7 +58,7 @@ type (
 		ClientStore            store.IClientStore
 		TokenStore             store.ITokenStore
 		AuthorizationCodeStore store.IAuthorizationCodeStore
-		ClientStateStore       store.IClientStateStore
+		StateStore             store.IStateStore
 		ClientValidator        security.IClientValidator
 		PkceValidator          security.IPkceValidator
 		ResourceOwnerValidator security.IResourceOwnerValidator
@@ -105,8 +105,8 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 	if options.AuthorizationCodeStore == nil {
 		options.AuthorizationCodeStore = store.NewDefaultAuthorizationCodeStore(180)
 	}
-	if options.ClientStateStore == nil {
-		options.ClientStateStore = store.NewDefaultClientStateStore(180)
+	if options.StateStore == nil {
+		options.StateStore = store.NewDefaultStateStore()
 	}
 	if options.ClientValidator == nil {
 		options.ClientValidator = security.NewDefaultClientValidator(options.ClientStore)
@@ -140,7 +140,7 @@ func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
 		ClientStore:            options.ClientStore,
 		TokenStore:             options.TokenStore,
 		AuthorizationCodeStore: options.AuthorizationCodeStore,
-		ClientStateStore:       options.ClientStateStore,
+		StateStore:             options.StateStore,
 		ClientValidator:        options.ClientValidator,
 		ResourceOwnerValidator: options.ResourceOwnerValidator,
 		AuthCodeGenerator:      options.AuthCodeGenerator,
@@ -363,7 +363,7 @@ func (x *DefaultAuthServer) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 	state := string(ctx.FormValue(core.Form_State))
 	endSessionID := core.GenerateID()
 	if state != "" {
-		x.ClientStateStore.Save(clientID, endSessionID, state)
+		x.StateStore.Save(clientID+":"+endSessionID, state, 60)
 	}
 
 	// delete login cookie
@@ -411,7 +411,7 @@ func (x *DefaultAuthServer) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	}
 
 	// verify state
-	storedState := x.ClientStateStore.GetThenRemove(credential.Username, endSessionID)
+	storedState := x.StateStore.GetThenRemove(credential.Username + ":" + endSessionID)
 	if storedState == "" || storedState != state {
 		x.writeError(ctx, http.StatusBadRequest, errors.New("invalid state"), nil)
 		return
