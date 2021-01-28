@@ -9,7 +9,7 @@ message Client {
     string Secret  = 2;
     int32 AccessTokenExpireSeconds  = 3;
     int32 RefreshTokenExpireSeconds  = 4;
-    int32 PermissionLevel  = 5;
+    int64 PermissionLevel  = 5;
     repeated string Grants  = 6;
     repeated string Audiences  = 7;
     repeated string Scopes  = 8;
