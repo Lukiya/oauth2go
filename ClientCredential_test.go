@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/syncfuture/go/config"
+	config "github.com/syncfuture/go/sconfig"
 )
 
 var (

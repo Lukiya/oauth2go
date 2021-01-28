@@ -5,7 +5,7 @@ import (
 
 	"github.com/Lukiya/oauth2go/security/rsa"
 	"github.com/stretchr/testify/assert"
-	"github.com/syncfuture/go/config"
+	config "github.com/syncfuture/go/sconfig"
 	"github.com/syncfuture/go/sredis"
 )
 

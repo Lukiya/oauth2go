@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 
 	"github.com/Lukiya/oauth2go/security"
-	ss "github.com/syncfuture/go/security"
+	ss "github.com/syncfuture/go/ssecurity"
 	"github.com/syncfuture/go/u"
 )
 
