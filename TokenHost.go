@@ -22,17 +22,52 @@ import (
 )
 
 type (
-	AuthServerOptions struct {
-		AuthCookieName string
-		// SurferCookieName       string
+	// ITokenHost interface {
+	// 	TokenRequestHandler(ctx *fasthttp.RequestCtx)
+	// 	AuthorizeRequestHandler(ctx *fasthttp.RequestCtx)
+	// 	EndSessionRequestHandler(ctx *fasthttp.RequestCtx)
+	// 	ClearTokenRequestHandler(ctx *fasthttp.RequestCtx)
+	// 	// GetOptions() *AuthServerOptions
+	// 	GetCookie(ctx *fasthttp.RequestCtx, name string) string
+	// 	SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration)
+	// 	DelCookie(ctx *fasthttp.RequestCtx, key string)
+	// }
+
+	TokenHostOption func(*TokenHost)
+
+	// AuthServerOptions struct {
+	// 	AuthCookieName string
+	// 	// SurferCookieName       string
+	// 	AuthorizeEndpoint      string
+	// 	TokenEndpoint          string
+	// 	EndSessionEndpoint     string
+	// 	LoginEndpoint          string
+	// 	LogoutEndpoint         string
+	// 	PkceRequired           bool
+	// 	CookieManager          *securecookie.SecureCookie
+	// 	PrivateKey             *rsa.PrivateKey
+	// 	ClientStore            store.IClientStore
+	// 	TokenStore             store.ITokenStore
+	// 	AuthorizationCodeStore store.IAuthorizationCodeStore
+	// 	StateStore             store.IStateStore
+	// 	ClientValidator        security.IClientValidator
+	// 	PkceValidator          security.IPkceValidator
+	// 	ResourceOwnerValidator security.IResourceOwnerValidator
+	// 	AuthCodeGenerator      token.IAuthCodeGenerator
+	// 	TokenGenerator         token.ITokenGenerator
+	// 	ClaimsGenerator        token.ITokenClaimsGenerator
+	// }
+
+	TokenHost struct {
+		AuthCookieName         string
 		AuthorizeEndpoint      string
 		TokenEndpoint          string
 		EndSessionEndpoint     string
 		LoginEndpoint          string
 		LogoutEndpoint         string
 		PkceRequired           bool
-		CookieManager          *securecookie.SecureCookie
 		PrivateKey             *rsa.PrivateKey
+		CookieManager          *securecookie.SecureCookie
 		ClientStore            store.IClientStore
 		TokenStore             store.ITokenStore
 		AuthorizationCodeStore store.IAuthorizationCodeStore
@@ -44,113 +79,72 @@ type (
 		TokenGenerator         token.ITokenGenerator
 		ClaimsGenerator        token.ITokenClaimsGenerator
 	}
-
-	DefaultAuthServer struct {
-		Options                *AuthServerOptions
-		AuthCookieName         string
-		AuthorizeEndpoint      string
-		TokenEndpoint          string
-		EndSessionEndpoint     string
-		LoginEndpoint          string
-		LogoutEndpoint         string
-		PkceRequired           bool
-		CookieManager          *securecookie.SecureCookie
-		ClientStore            store.IClientStore
-		TokenStore             store.ITokenStore
-		AuthorizationCodeStore store.IAuthorizationCodeStore
-		StateStore             store.IStateStore
-		ClientValidator        security.IClientValidator
-		PkceValidator          security.IPkceValidator
-		ResourceOwnerValidator security.IResourceOwnerValidator
-		AuthCodeGenerator      token.IAuthCodeGenerator
-		TokenGenerator         token.ITokenGenerator
-	}
 )
 
-func NewDefaultAuthServer(options *AuthServerOptions) IAuthServer {
-	if options.ClientStore == nil {
+func (x *TokenHost) BuildTokenHost() {
+	if x.ClientStore == nil {
 		log.Fatal("ClientStore cannot be nil")
 	}
-	if options.TokenStore == nil {
+	if x.TokenStore == nil {
 		log.Fatal("TokenStore cannot be nil")
 	}
-	if options.PrivateKey == nil {
+	if x.PrivateKey == nil {
 		log.Fatal("PrivateKey cannot be nil")
 	}
-	if options.ClaimsGenerator == nil {
+	if x.ClaimsGenerator == nil {
 		log.Fatal("ClaimsGenerator cannot be nil")
 	}
-	if options.CookieManager == nil {
+	if x.CookieManager == nil {
 		log.Fatal("CookieManager cannot be nil")
 	}
-	if options.AuthCookieName == "" {
-		options.AuthCookieName = "go.auth"
+	if x.AuthCookieName == "" {
+		x.AuthCookieName = "go.auth"
 	}
-	if options.AuthorizeEndpoint == "" {
-		options.AuthorizeEndpoint = "/connect/authorize"
+	if x.AuthorizeEndpoint == "" {
+		x.AuthorizeEndpoint = "/connect/authorize"
 	}
-	if options.TokenEndpoint == "" {
-		options.TokenEndpoint = "/connect/token"
+	if x.TokenEndpoint == "" {
+		x.TokenEndpoint = "/connect/token"
 	}
-	if options.EndSessionEndpoint == "" {
-		options.EndSessionEndpoint = "/connect/endsession"
+	if x.EndSessionEndpoint == "" {
+		x.EndSessionEndpoint = "/connect/endsession"
 	}
-	if options.LoginEndpoint == "" {
-		options.LoginEndpoint = "/account/login"
+	if x.LoginEndpoint == "" {
+		x.LoginEndpoint = "/account/login"
 	}
-	if options.LogoutEndpoint == "" {
-		options.LogoutEndpoint = "/account/logout"
+	if x.LogoutEndpoint == "" {
+		x.LogoutEndpoint = "/account/logout"
 	}
 
-	if options.AuthorizationCodeStore == nil {
-		options.AuthorizationCodeStore = store.NewDefaultAuthorizationCodeStore(180)
+	if x.AuthorizationCodeStore == nil {
+		x.AuthorizationCodeStore = store.NewDefaultAuthorizationCodeStore(180)
 	}
-	if options.StateStore == nil {
-		options.StateStore = store.NewDefaultStateStore()
+	if x.StateStore == nil {
+		x.StateStore = store.NewDefaultStateStore()
 	}
-	if options.ClientValidator == nil {
-		options.ClientValidator = security.NewDefaultClientValidator(options.ClientStore)
+	if x.ClientValidator == nil {
+		x.ClientValidator = security.NewDefaultClientValidator(x.ClientStore)
 	}
-	if options.AuthCodeGenerator == nil {
-		options.AuthCodeGenerator = token.NewDefaultAuthCodeGenerator()
+	if x.AuthCodeGenerator == nil {
+		x.AuthCodeGenerator = token.NewDefaultAuthCodeGenerator()
 	}
-	if options.PkceValidator == nil {
-		options.PkceValidator = security.NewDefaultPkceValidator()
+	if x.PkceValidator == nil {
+		x.PkceValidator = security.NewDefaultPkceValidator()
 	}
-	if options.TokenGenerator == nil {
-		options.TokenGenerator = token.NewDefaultTokenGenerator(
-			options.PrivateKey,
+	if x.TokenGenerator == nil {
+		x.TokenGenerator = token.NewDefaultTokenGenerator(
+			x.PrivateKey,
 			jwt.PS256,
-			options.ClaimsGenerator,
+			x.ClaimsGenerator,
 		)
 	}
-	if options.ResourceOwnerValidator == nil {
-		options.ResourceOwnerValidator = security.NewDefaultResourceOwnerValidator()
-	}
-
-	return &DefaultAuthServer{
-		Options:                options,
-		AuthCookieName:         options.AuthCookieName,
-		AuthorizeEndpoint:      options.AuthorizeEndpoint,
-		TokenEndpoint:          options.TokenEndpoint,
-		LoginEndpoint:          options.LoginEndpoint,
-		LogoutEndpoint:         options.LogoutEndpoint,
-		PkceRequired:           options.PkceRequired,
-		CookieManager:          options.CookieManager,
-		ClientStore:            options.ClientStore,
-		TokenStore:             options.TokenStore,
-		AuthorizationCodeStore: options.AuthorizationCodeStore,
-		StateStore:             options.StateStore,
-		ClientValidator:        options.ClientValidator,
-		ResourceOwnerValidator: options.ResourceOwnerValidator,
-		AuthCodeGenerator:      options.AuthCodeGenerator,
-		TokenGenerator:         options.TokenGenerator,
-		PkceValidator:          options.PkceValidator,
+	if x.ResourceOwnerValidator == nil {
+		x.ResourceOwnerValidator = security.NewDefaultResourceOwnerValidator()
 	}
 }
 
 // AuthorizeRequestHandler handle authorize request
-func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
+func (x *TokenHost) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 	respType := string(ctx.FormValue(core.Form_ResponseType))
 	clientID := string(ctx.FormValue(core.Form_ClientID))
 	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
@@ -187,7 +181,7 @@ func (x *DefaultAuthServer) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 }
 
 // AuthorizationCodeRequestHandler handle authorize code request
-func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
+func (x *TokenHost) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
 	var code string
 	// pkce check
 	if !x.PkceRequired {
@@ -266,7 +260,7 @@ func (x *DefaultAuthServer) AuthorizationCodeRequestHandler(ctx *fasthttp.Reques
 }
 
 // AuthorizationCodeRequestHandler handle implicit token request
-func (x *DefaultAuthServer) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
+func (x *TokenHost) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx, client model.IClient, respType, scopesStr, redirectURI, state, username string) {
 	// user already logged in, issue token
 	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,
@@ -298,7 +292,7 @@ func (x *DefaultAuthServer) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx
 }
 
 // TokenRequestHandler handle token request
-func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
+func (x *TokenHost) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	// get parametes from request
 	var grantTypeStr = string(ctx.FormValue(core.Form_GrantType))
 	var scopesStr = string(ctx.FormValue(core.Form_Scope))
@@ -346,7 +340,7 @@ func (x *DefaultAuthServer) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 }
 
 // EndSessionRequestHandler handle end session request
-func (x *DefaultAuthServer) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
+func (x *TokenHost) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 	clientID := string(ctx.FormValue(core.Form_ClientID))
 	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
 	// verify client
@@ -381,7 +375,7 @@ func (x *DefaultAuthServer) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 }
 
 // ClearTokenHandler handle clear token request
-func (x *DefaultAuthServer) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
+func (x *TokenHost) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	state := string(ctx.FormValue(core.Form_State))
 	if state == "" {
 		x.writeError(ctx, http.StatusBadRequest, errors.New("missing state"), nil)
@@ -421,7 +415,7 @@ func (x *DefaultAuthServer) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	x.TokenStore.RemoveRefreshToken(oldRefreshToken)
 }
 
-func (x *DefaultAuthServer) GetCookie(ctx *fasthttp.RequestCtx, name string) string {
+func (x *TokenHost) GetCookie(ctx *fasthttp.RequestCtx, name string) string {
 	encryptedCookie := string(ctx.Request.Header.Cookie(name))
 	if encryptedCookie == "" {
 		return ""
@@ -437,7 +431,7 @@ func (x *DefaultAuthServer) GetCookie(ctx *fasthttp.RequestCtx, name string) str
 	return r
 }
 
-func (x *DefaultAuthServer) SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
+func (x *TokenHost) SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
 	if encryptedCookie, err := x.CookieManager.Encode(key, value); err == nil {
 		authCookie := fasthttp.AcquireCookie()
 		authCookie.SetKey(key)
@@ -455,7 +449,7 @@ func (x *DefaultAuthServer) SetCookie(ctx *fasthttp.RequestCtx, key, value strin
 	}
 }
 
-func (x *DefaultAuthServer) DelCookie(ctx *fasthttp.RequestCtx, key string) {
+func (x *TokenHost) DelCookie(ctx *fasthttp.RequestCtx, key string) {
 	ctx.Response.Header.DelCookie(key)
 
 	authCookie := fasthttp.AcquireCookie()
@@ -467,12 +461,12 @@ func (x *DefaultAuthServer) DelCookie(ctx *fasthttp.RequestCtx, key string) {
 	ctx.Response.Header.SetCookie(authCookie)
 }
 
-func (x *DefaultAuthServer) GetOptions() *AuthServerOptions {
-	return x.Options
-}
+// func (x *TokenHost) GetOptions() *AuthServerOptions {
+// 	return x.Options
+// }
 
 // handleClientCredentialsTokenRequest handle client credentials token request
-func (x *DefaultAuthServer) handleClientCredentialsTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
+func (x *TokenHost) handleClientCredentialsTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
 	// issue token directly
 	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,
@@ -490,7 +484,7 @@ func (x *DefaultAuthServer) handleClientCredentialsTokenRequest(ctx *fasthttp.Re
 }
 
 // handleAuthorizationCodeTokenRequest handle authorization code token request
-func (x *DefaultAuthServer) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
+func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
 	// exchange token by using auhorization code
 	code := string(ctx.FormValue(core.Form_Code))
 	clientID := string(ctx.FormValue(core.Form_ClientID))
@@ -557,7 +551,7 @@ func (x *DefaultAuthServer) handleAuthorizationCodeTokenRequest(ctx *fasthttp.Re
 }
 
 // handleResourceOwnerTokenRequest handle resource owner token request
-func (x *DefaultAuthServer) handleResourceOwnerTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
+func (x *TokenHost) handleResourceOwnerTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
 	// verify username & password
 	username := string(ctx.FormValue(core.Form_Username))
 	password := string(ctx.FormValue(core.Form_Password))
@@ -578,7 +572,7 @@ func (x *DefaultAuthServer) handleResourceOwnerTokenRequest(ctx *fasthttp.Reques
 }
 
 // handleRefreshTokenRequest handle refresh token request
-func (x *DefaultAuthServer) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
+func (x *TokenHost) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
 	refreshToken := string(ctx.FormValue(core.Form_RefreshToken))
 	if refreshToken == "" {
 		err := errors.New(core.Err_invalid_request)
@@ -609,7 +603,7 @@ func (x *DefaultAuthServer) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, 
 	x.issueTokenByRequestInfo(ctx, core.GrantType_RefreshToken, client, tokenInfo)
 }
 
-func (x *DefaultAuthServer) handleLogoutRequest(ctx *fasthttp.RequestCtx, statusCode int, err, errDesc error) {
+func (x *TokenHost) handleLogoutRequest(ctx *fasthttp.RequestCtx, statusCode int, err, errDesc error) {
 	if errDesc == nil {
 		errDesc = err
 	}
@@ -623,7 +617,7 @@ func (x *DefaultAuthServer) handleLogoutRequest(ctx *fasthttp.RequestCtx, status
 }
 
 // issueTokenByRequestInfo issue access token and refresh token
-func (x *DefaultAuthServer) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, tokenInfo *model.TokenInfo) {
+func (x *TokenHost) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, tokenInfo *model.TokenInfo) {
 	// issue token
 	token, err := x.TokenGenerator.GenerateAccessToken(
 		ctx,
@@ -656,7 +650,7 @@ func (x *DefaultAuthServer) issueTokenByRequestInfo(ctx *fasthttp.RequestCtx, gr
 }
 
 // WriteTokenHandler
-func (x *DefaultAuthServer) writeToken(ctx *fasthttp.RequestCtx, token, scopesStr string, expireSeconds int32, refreshToken string) {
+func (x *TokenHost) writeToken(ctx *fasthttp.RequestCtx, token, scopesStr string, expireSeconds int32, refreshToken string) {
 	ctx.SetContentType(core.ContentType_Json)
 	ctx.Response.Header.Add(core.Header_CacheControl, core.Header_CacheControl_Value)
 	ctx.Response.Header.Add(core.Header_Pragma, core.Header_Pragma_Value)
@@ -669,7 +663,7 @@ func (x *DefaultAuthServer) writeToken(ctx *fasthttp.RequestCtx, token, scopesSt
 }
 
 // writeError handle error
-func (x *DefaultAuthServer) writeError(ctx *fasthttp.RequestCtx, statusCode int, err, errDesc error) {
+func (x *TokenHost) writeError(ctx *fasthttp.RequestCtx, statusCode int, err, errDesc error) {
 	if errDesc == nil {
 		errDesc = err
 	}
@@ -683,7 +677,7 @@ func (x *DefaultAuthServer) writeError(ctx *fasthttp.RequestCtx, statusCode int,
 }
 
 // // getSurferID get surfer id
-// func (x *DefaultAuthServer) getSurferID(ctx *fasthttp.RequestCtx) (surferID string) {
+// func (x *TokenHost) getSurferID(ctx *fasthttp.RequestCtx) (surferID string) {
 // 	surferID = x.GetCookie(ctx, x.Options.SurferCookieName)
 // 	if surferID == "" {
 // 		surferID = core.GenerateID()

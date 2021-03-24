@@ -11,7 +11,6 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/syncfuture/go v1.5.4
 	github.com/valyala/fasthttp v1.22.0
-	github.com/valyala/quicktemplate v1.6.3
-	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
+	golang.org/x/oauth2 v0.0.0-20210323180902-22b0adad7558
 	google.golang.org/protobuf v1.26.0
 )
