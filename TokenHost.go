@@ -67,7 +67,7 @@ type (
 		LogoutEndpoint         string
 		PkceRequired           bool
 		PrivateKey             *rsa.PrivateKey
-		CookieManager          *securecookie.SecureCookie
+		CookieProtector        *securecookie.SecureCookie
 		ClientStore            store.IClientStore
 		TokenStore             store.ITokenStore
 		AuthorizationCodeStore store.IAuthorizationCodeStore
@@ -94,7 +94,7 @@ func (x *TokenHost) BuildTokenHost() {
 	if x.ClaimsGenerator == nil {
 		log.Fatal("ClaimsGenerator cannot be nil")
 	}
-	if x.CookieManager == nil {
+	if x.CookieProtector == nil {
 		log.Fatal("CookieManager cannot be nil")
 	}
 	if x.AuthCookieName == "" {
@@ -422,7 +422,7 @@ func (x *TokenHost) GetCookie(ctx *fasthttp.RequestCtx, name string) string {
 	}
 
 	var r string
-	err := x.CookieManager.Decode(name, encryptedCookie, &r)
+	err := x.CookieProtector.Decode(name, encryptedCookie, &r)
 
 	if u.LogError(err) {
 		return ""
@@ -432,7 +432,7 @@ func (x *TokenHost) GetCookie(ctx *fasthttp.RequestCtx, name string) string {
 }
 
 func (x *TokenHost) SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
-	if encryptedCookie, err := x.CookieManager.Encode(key, value); err == nil {
+	if encryptedCookie, err := x.CookieProtector.Encode(key, value); err == nil {
 		authCookie := fasthttp.AcquireCookie()
 		authCookie.SetKey(key)
 		authCookie.SetValue(encryptedCookie)
