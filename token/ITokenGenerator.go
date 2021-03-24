@@ -31,7 +31,8 @@ type DefaultTokenGenerator struct {
 func (x *DefaultTokenGenerator) GenerateAccessToken(ctx *fasthttp.RequestCtx, grantType string, client model.IClient, scopes []string, username string) (string, error) {
 	claims := new(jwt.Claims)
 	claims.KeyID = core.GenerateID()
-	claims.Set = *x.ClaimsGenerator.Generate(ctx, grantType, client, scopes, username)
+	// claims.Set = *x.ClaimsGenerator.Generate(ctx, grantType, client, scopes, username)
+	claims.Set = *x.ClaimsGenerator.Generate(grantType, client, scopes, username)
 	if subValue, ok := claims.Set["sub"]; ok {
 		if sub, b := subValue.(string); b {
 			claims.Subject = sub
