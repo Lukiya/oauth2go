@@ -22,16 +22,16 @@ import (
 )
 
 type (
-	// ITokenHost interface {
-	// 	TokenRequestHandler(ctx *fasthttp.RequestCtx)
-	// 	AuthorizeRequestHandler(ctx *fasthttp.RequestCtx)
-	// 	EndSessionRequestHandler(ctx *fasthttp.RequestCtx)
-	// 	ClearTokenRequestHandler(ctx *fasthttp.RequestCtx)
-	// 	// GetOptions() *AuthServerOptions
-	// 	GetCookie(ctx *fasthttp.RequestCtx, name string) string
-	// 	SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration)
-	// 	DelCookie(ctx *fasthttp.RequestCtx, key string)
-	// }
+	ITokenHost interface {
+		TokenRequestHandler(ctx *fasthttp.RequestCtx)
+		AuthorizeRequestHandler(ctx *fasthttp.RequestCtx)
+		EndSessionRequestHandler(ctx *fasthttp.RequestCtx)
+		ClearTokenRequestHandler(ctx *fasthttp.RequestCtx)
+		// GetOptions() *AuthServerOptions
+		GetCookie(ctx *fasthttp.RequestCtx, name string) string
+		SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration)
+		DelCookie(ctx *fasthttp.RequestCtx, key string)
+	}
 
 	TokenHostOption func(*TokenHost)
 
@@ -145,11 +145,11 @@ func (x *TokenHost) BuildTokenHost() {
 
 // AuthorizeRequestHandler handle authorize request
 func (x *TokenHost) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
-	respType := string(ctx.FormValue(core.Form_ResponseType))
-	clientID := string(ctx.FormValue(core.Form_ClientID))
-	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
-	scopesStr := string(ctx.FormValue(core.Form_Scope))
-	state := string(ctx.FormValue(core.Form_State))
+	respType := u.BytesToStr(ctx.FormValue(core.Form_ResponseType))
+	clientID := u.BytesToStr(ctx.FormValue(core.Form_ClientID))
+	redirectURI := u.BytesToStr(ctx.FormValue(core.Form_RedirectUri))
+	scopesStr := u.BytesToStr(ctx.FormValue(core.Form_Scope))
+	state := u.BytesToStr(ctx.FormValue(core.Form_State))
 	// surferID := x.getSurferID(ctx)
 
 	// verify client
@@ -166,7 +166,7 @@ func (x *TokenHost) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 
 	username := x.GetCookie(ctx, x.AuthCookieName)
 	if username == "" {
-		returnURL := url.QueryEscape(string(ctx.URI().RequestURI()))
+		returnURL := url.QueryEscape(u.BytesToStr(ctx.URI().RequestURI()))
 		targetURL := fmt.Sprintf("%s?%s=%s", x.LoginEndpoint, core.Form_ReturnUrl, returnURL)
 		core.Redirect(ctx, targetURL)
 		return
@@ -208,7 +208,7 @@ func (x *TokenHost) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, cl
 	}
 
 	// pkce required
-	codeChanllenge := string(ctx.FormValue(core.Form_CodeChallenge))
+	codeChanllenge := u.BytesToStr(ctx.FormValue(core.Form_CodeChallenge))
 
 	if codeChanllenge == "" {
 		// client didn't provide pkce chanllenge, write error
@@ -220,7 +220,7 @@ func (x *TokenHost) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, cl
 	}
 
 	// client provided pkce chanllenge
-	codeChanllengeMethod := string(ctx.FormValue(core.Form_CodeChallengeMethod))
+	codeChanllengeMethod := u.BytesToStr(ctx.FormValue(core.Form_CodeChallengeMethod))
 	if codeChanllengeMethod == "" {
 		codeChanllengeMethod = core.Pkce_Plain
 	} else if codeChanllengeMethod != core.Pkce_Plain && codeChanllengeMethod != core.Pkce_S256 {
@@ -294,8 +294,8 @@ func (x *TokenHost) ImplicitTokenRequestHandler(ctx *fasthttp.RequestCtx, client
 // TokenRequestHandler handle token request
 func (x *TokenHost) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	// get parametes from request
-	var grantTypeStr = string(ctx.FormValue(core.Form_GrantType))
-	var scopesStr = string(ctx.FormValue(core.Form_Scope))
+	var grantTypeStr = u.BytesToStr(ctx.FormValue(core.Form_GrantType))
+	var scopesStr = u.BytesToStr(ctx.FormValue(core.Form_Scope))
 
 	credentials, err, errDesc := x.ClientValidator.ExractClientCredentials(ctx)
 	if err != nil {
@@ -341,8 +341,8 @@ func (x *TokenHost) TokenRequestHandler(ctx *fasthttp.RequestCtx) {
 
 // EndSessionRequestHandler handle end session request
 func (x *TokenHost) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
-	clientID := string(ctx.FormValue(core.Form_ClientID))
-	redirectURI := string(ctx.FormValue(core.Form_RedirectUri))
+	clientID := u.BytesToStr(ctx.FormValue(core.Form_ClientID))
+	redirectURI := u.BytesToStr(ctx.FormValue(core.Form_RedirectUri))
 	// verify client
 	_, err, errDesc := x.ClientValidator.VerifyRedirectURI(
 		clientID,
@@ -354,7 +354,7 @@ func (x *TokenHost) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 	}
 
 	// save client state for clear token verification
-	state := string(ctx.FormValue(core.Form_State))
+	state := u.BytesToStr(ctx.FormValue(core.Form_State))
 	endSessionID := core.GenerateID()
 	if state != "" {
 		x.StateStore.Save(clientID+":"+endSessionID, state, 60)
@@ -376,25 +376,25 @@ func (x *TokenHost) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 
 // ClearTokenHandler handle clear token request
 func (x *TokenHost) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
-	state := string(ctx.FormValue(core.Form_State))
+	state := u.BytesToStr(ctx.FormValue(core.Form_State))
 	if state == "" {
 		x.writeError(ctx, http.StatusBadRequest, errors.New("missing state"), nil)
 		return
 	}
-	endSessionID := string(ctx.FormValue(core.Form_EndSessionID))
+	endSessionID := u.BytesToStr(ctx.FormValue(core.Form_EndSessionID))
 	if endSessionID == "" {
 		x.writeError(ctx, http.StatusBadRequest, errors.New("missing es_id"), nil)
 		return
 	}
-	oldRefreshToken := string(ctx.FormValue(core.Form_RefreshToken))
+	oldRefreshToken := u.BytesToStr(ctx.FormValue(core.Form_RefreshToken))
 	if oldRefreshToken == "" {
 		x.writeError(ctx, http.StatusBadRequest, errors.New("missing refresh token"), nil)
 		return
 	}
 
 	credential := &model.Credential{
-		Username: string(ctx.FormValue(core.Form_ClientID)),
-		Password: string(ctx.FormValue(core.Form_ClientSecret)),
+		Username: u.BytesToStr(ctx.FormValue(core.Form_ClientID)),
+		Password: u.BytesToStr(ctx.FormValue(core.Form_ClientSecret)),
 	}
 
 	// verify client
@@ -416,7 +416,7 @@ func (x *TokenHost) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func (x *TokenHost) GetCookie(ctx *fasthttp.RequestCtx, name string) string {
-	encryptedCookie := string(ctx.Request.Header.Cookie(name))
+	encryptedCookie := u.BytesToStr(ctx.Request.Header.Cookie(name))
 	if encryptedCookie == "" {
 		return ""
 	}
@@ -434,6 +434,9 @@ func (x *TokenHost) GetCookie(ctx *fasthttp.RequestCtx, name string) string {
 func (x *TokenHost) SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
 	if encryptedCookie, err := x.CookieProtector.Encode(key, value); err == nil {
 		authCookie := fasthttp.AcquireCookie()
+		defer func() {
+			fasthttp.ReleaseCookie(authCookie)
+		}()
 		authCookie.SetKey(key)
 		authCookie.SetValue(encryptedCookie)
 		authCookie.SetSecure(true)
@@ -443,7 +446,6 @@ func (x *TokenHost) SetCookie(ctx *fasthttp.RequestCtx, key, value string, durat
 			authCookie.SetExpire(time.Now().Add(duration))
 		}
 		ctx.Response.Header.SetCookie(authCookie)
-		defer fasthttp.ReleaseCookie(authCookie)
 	} else {
 		u.LogError(err)
 	}
@@ -453,6 +455,9 @@ func (x *TokenHost) DelCookie(ctx *fasthttp.RequestCtx, key string) {
 	ctx.Response.Header.DelCookie(key)
 
 	authCookie := fasthttp.AcquireCookie()
+	defer func() {
+		fasthttp.ReleaseCookie(authCookie)
+	}()
 	authCookie.SetKey(key)
 	authCookie.SetSecure(true)
 	authCookie.SetPath("/")
@@ -486,9 +491,9 @@ func (x *TokenHost) handleClientCredentialsTokenRequest(ctx *fasthttp.RequestCtx
 // handleAuthorizationCodeTokenRequest handle authorization code token request
 func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
 	// exchange token by using auhorization code
-	code := string(ctx.FormValue(core.Form_Code))
-	clientID := string(ctx.FormValue(core.Form_ClientID))
-	redirectUri := string(ctx.FormValue(core.Form_RedirectUri))
+	code := u.BytesToStr(ctx.FormValue(core.Form_Code))
+	clientID := u.BytesToStr(ctx.FormValue(core.Form_ClientID))
+	redirectUri := u.BytesToStr(ctx.FormValue(core.Form_RedirectUri))
 
 	tokenInfo := x.AuthorizationCodeStore.GetThenRemove(code)
 	if tokenInfo == nil {
@@ -522,7 +527,7 @@ func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx
 		return
 	}
 
-	codeVierifier := string(ctx.FormValue(core.Form_CodeVerifier))
+	codeVierifier := u.BytesToStr(ctx.FormValue(core.Form_CodeVerifier))
 	if codeVierifier == "" {
 		// client didn't provide code verifier, write error
 		err := errors.New(core.Err_invalid_request)
@@ -540,7 +545,7 @@ func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx
 		return
 	}
 
-	oldRefreshToken := string(ctx.FormValue(core.Form_RefreshToken))
+	oldRefreshToken := u.BytesToStr(ctx.FormValue(core.Form_RefreshToken))
 	if oldRefreshToken != "" {
 		// received old refresh token, revoke it
 		x.TokenStore.RemoveRefreshToken(oldRefreshToken)
@@ -553,8 +558,8 @@ func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx
 // handleResourceOwnerTokenRequest handle resource owner token request
 func (x *TokenHost) handleResourceOwnerTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient, scopesStr string) {
 	// verify username & password
-	username := string(ctx.FormValue(core.Form_Username))
-	password := string(ctx.FormValue(core.Form_Password))
+	username := u.BytesToStr(ctx.FormValue(core.Form_Username))
+	password := u.BytesToStr(ctx.FormValue(core.Form_Password))
 	success := x.ResourceOwnerValidator.Verify(username, password)
 	if success {
 		// pass, issue token
@@ -573,7 +578,7 @@ func (x *TokenHost) handleResourceOwnerTokenRequest(ctx *fasthttp.RequestCtx, cl
 
 // handleRefreshTokenRequest handle refresh token request
 func (x *TokenHost) handleRefreshTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
-	refreshToken := string(ctx.FormValue(core.Form_RefreshToken))
+	refreshToken := u.BytesToStr(ctx.FormValue(core.Form_RefreshToken))
 	if refreshToken == "" {
 		err := errors.New(core.Err_invalid_request)
 		errDesc := errors.New("refresh token is missing")

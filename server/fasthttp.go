@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/syncfuture/go/u"
 	"github.com/valyala/fasthttp"
 )
 
@@ -51,9 +52,9 @@ func (x *defaultRouter) ServeFiles(handler fasthttp.RequestHandler) {
 }
 
 func (x *defaultRouter) Serve(ctx *fasthttp.RequestCtx) {
-	path := string(ctx.URI().Path()) // Todo: use pool
+	path := u.BytesToStr(ctx.URI().Path()) // Todo: use pool
 	if pathRoute, ok := x.routingTable[path]; ok {
-		method := string(ctx.Method()) // Todo: use pool
+		method := u.BytesToStr(ctx.Method()) // Todo: use pool
 		if handler, ok := pathRoute[method]; ok {
 			handler(ctx)
 		}

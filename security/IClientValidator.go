@@ -55,7 +55,7 @@ func (x *DefaultClientValidator) ExractClientCredentials(ctx *fasthttp.RequestCt
 }
 
 func (x *DefaultClientValidator) exractClientCredentialsFromHeader(ctx *fasthttp.RequestCtx) (r *model.Credential, err, errDesc error) {
-	authorzation := string(ctx.Request.Header.Peek(core.Header_Authorization))
+	authorzation := u.BytesToStr(ctx.Request.Header.Peek(core.Header_Authorization))
 	if authorzation == "" {
 		err = errors.New(core.Err_invalid_request)
 		errDesc = errors.New("no authorization header")
@@ -73,7 +73,7 @@ func (x *DefaultClientValidator) exractClientCredentialsFromHeader(ctx *fasthttp
 	if u.LogError(err) {
 		return
 	}
-	authStr := string(authBytes)
+	authStr := u.BytesToStr(authBytes)
 	authArray = strings.Split(authStr, core.Seperators_Auth)
 
 	if len(authArray) != 2 || authArray[0] == "" || authArray[1] == "" {
@@ -91,7 +91,7 @@ func (x *DefaultClientValidator) exractClientCredentialsFromHeader(ctx *fasthttp
 }
 
 func (x *DefaultClientValidator) exractClientCredentialsFromBody(ctx *fasthttp.RequestCtx) (r *model.Credential, err error, errDesc error) {
-	id := string(ctx.FormValue(core.Form_ClientID))
+	id := u.BytesToStr(ctx.FormValue(core.Form_ClientID))
 
 	if id == "" {
 		err = errors.New(core.Err_invalid_request)
@@ -99,7 +99,7 @@ func (x *DefaultClientValidator) exractClientCredentialsFromBody(ctx *fasthttp.R
 		return
 	}
 
-	secret := string(ctx.FormValue(core.Form_ClientSecret))
+	secret := u.BytesToStr(ctx.FormValue(core.Form_ClientSecret))
 	if secret == "" {
 		err = errors.New(core.Err_invalid_request)
 		errDesc = errors.New("client secret is missing")

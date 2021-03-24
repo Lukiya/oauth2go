@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/sony/sonyflake"
 	"github.com/syncfuture/go/spool"
+	"github.com/syncfuture/go/u"
 	"github.com/valyala/fasthttp"
 )
 
@@ -93,15 +94,15 @@ var (
 )
 
 func init() {
-	hashKey := []byte("JGQUQERAY5xPNVkliVMgGpVjLmjk2VDFAcP2gTI70Dw=")
-	blockKey := []byte("6MHdT1pG22lXjFcZzobwlQ==")
+	hashKey := u.StrToBytes("JGQUQERAY5xPNVkliVMgGpVjLmjk2VDFAcP2gTI70Dw=")
+	blockKey := u.StrToBytes("6MHdT1pG22lXjFcZzobwlQ==")
 	_secureCookie = securecookie.New(hashKey, blockKey)
 	_idGenerator = sonyflake.NewSonyflake(sonyflake.Settings{})
 }
 
 func ToSHA256Base64URL(in string) string {
 	h := sha256.New()
-	h.Write([]byte(in))
+	h.Write(u.StrToBytes(in))
 	r := h.Sum(nil)
 
 	return base64.RawURLEncoding.EncodeToString(r)
@@ -119,7 +120,7 @@ func Redirect(ctx *fasthttp.RequestCtx, url string) {
 }
 
 // func GetCookie(ctx *fasthttp.RequestCtx, key string) string {
-// 	encryptedCookie := string(ctx.Request.Header.Cookie(key))
+// 	encryptedCookie := u.BytesToStr(ctx.Request.Header.Cookie(key))
 // 	if encryptedCookie == "" {
 // 		return ""
 // 	}
@@ -155,7 +156,9 @@ func Redirect(ctx *fasthttp.RequestCtx, url string) {
 func Random64String() string {
 	randomNumber := _bytesPool.GetBytes()
 	rand.Read(*randomNumber)
-	defer _bytesPool.PutBytes(randomNumber)
+	defer func() {
+		_bytesPool.PutBytes(randomNumber)
+	}()
 
 	return base64.RawURLEncoding.EncodeToString(*randomNumber)
 }

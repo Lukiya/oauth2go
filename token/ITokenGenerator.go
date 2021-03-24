@@ -6,6 +6,7 @@ import (
 	"github.com/Lukiya/oauth2go/core"
 	"github.com/Lukiya/oauth2go/model"
 	"github.com/pascaldekloe/jwt"
+	"github.com/syncfuture/go/u"
 	"github.com/valyala/fasthttp"
 )
 
@@ -40,7 +41,7 @@ func (x *DefaultTokenGenerator) GenerateAccessToken(ctx *fasthttp.RequestCtx, gr
 	}
 
 	token, err := claims.RSASign(x.SigningAlgorithm, x.PrivateKey)
-	return string(token), err
+	return u.BytesToStr(token), err
 }
 
 func (x *DefaultTokenGenerator) GenerateRefreshToken() string {

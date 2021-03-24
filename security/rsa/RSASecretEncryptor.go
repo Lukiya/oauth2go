@@ -69,12 +69,12 @@ func (x *RSASecretEncryptor) DecryptBytesToBytes(input []byte) []byte {
 func (x *RSASecretEncryptor) DecryptStringToBytes(input string) []byte {
 	bytes, err := base64.StdEncoding.DecodeString(input)
 	if u.LogError(err) {
-		return []byte(input)
+		return u.StrToBytes(input)
 	}
 
 	r, err := x.encryptor.Decrypt(bytes)
 	if u.LogError(err) {
-		return []byte(input)
+		return u.StrToBytes(input)
 	}
 
 	return r

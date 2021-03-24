@@ -60,7 +60,7 @@ func (x *RedisClientStore) GetClients() map[string]model.IClient {
 
 	for k, v := range maps {
 		var client *model.Client
-		err = json.Unmarshal([]byte(v), &client)
+		err = json.Unmarshal(u.StrToBytes(v), &client)
 		if u.LogError(err) {
 			return nil
 		}
