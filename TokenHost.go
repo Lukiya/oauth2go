@@ -452,18 +452,19 @@ func (x *TokenHost) SetCookie(ctx *fasthttp.RequestCtx, key, value string, durat
 }
 
 func (x *TokenHost) DelCookie(ctx *fasthttp.RequestCtx, key string) {
-	ctx.Response.Header.DelCookie(key)
+	ctx.Response.Header.DelClientCookie(key)
+	// ctx.Response.Header.DelCookie(key)
 
-	authCookie := fasthttp.AcquireCookie()
-	defer func() {
-		fasthttp.ReleaseCookie(authCookie)
-	}()
-	authCookie.SetKey(key)
-	authCookie.SetSecure(true)
-	authCookie.SetPath("/")
-	authCookie.SetHTTPOnly(true)
-	authCookie.SetExpire(fasthttp.CookieExpireDelete)
-	ctx.Response.Header.SetCookie(authCookie)
+	// authCookie := fasthttp.AcquireCookie()
+	// defer func() {
+	// 	fasthttp.ReleaseCookie(authCookie)
+	// }()
+	// authCookie.SetKey(key)
+	// authCookie.SetSecure(true)
+	// authCookie.SetPath("/")
+	// authCookie.SetHTTPOnly(true)
+	// authCookie.SetExpire(fasthttp.CookieExpireDelete)
+	// ctx.Response.Header.SetCookie(authCookie)
 }
 
 // func (x *TokenHost) GetOptions() *AuthServerOptions {
