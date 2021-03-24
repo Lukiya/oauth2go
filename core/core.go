@@ -5,10 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"sync"
 
 	"github.com/gorilla/securecookie"
 	"github.com/sony/sonyflake"
+	"github.com/syncfuture/go/spool"
 	"github.com/valyala/fasthttp"
 )
 
@@ -89,12 +89,7 @@ const (
 var (
 	_idGenerator  *sonyflake.Sonyflake
 	_secureCookie *securecookie.SecureCookie
-	_byte64Pool   = &sync.Pool{
-		New: func() interface{} {
-			mem := make([]byte, 64)
-			return &mem
-		},
-	}
+	_bytesPool    = spool.NewSyncBytesPool(64)
 )
 
 func init() {
@@ -158,9 +153,9 @@ func Redirect(ctx *fasthttp.RequestCtx, url string) {
 // }
 
 func Random64String() string {
-	randomNumber := _byte64Pool.Get().(*[]byte)
+	randomNumber := _bytesPool.GetBytes()
 	rand.Read(*randomNumber)
-	defer _byte64Pool.Put(randomNumber)
+	defer _bytesPool.PutBytes(randomNumber)
 
 	return base64.RawURLEncoding.EncodeToString(*randomNumber)
 }
