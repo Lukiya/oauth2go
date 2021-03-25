@@ -145,6 +145,32 @@ func (x *TokenHost) BuildTokenHost() {
 	}
 }
 
+func (x *TokenHost) GetAuthCookieName() string {
+	return x.AuthCookieName
+}
+
+func (x *TokenHost) GetAuthorizeEndpoint() string {
+	return x.AuthorizeEndpoint
+
+}
+func (x *TokenHost) GetTokenEndpoint() string {
+	return x.TokenEndpoint
+
+}
+func (x *TokenHost) GetEndSessionEndpoint() string {
+	return x.EndSessionEndpoint
+
+}
+func (x *TokenHost) GetLoginEndpoint() string {
+	return x.LoginEndpoint
+}
+func (x *TokenHost) GetLogoutEndpoint() string {
+	return x.LogoutEndpoint
+}
+func (x *TokenHost) GetPrivateKey() *rsa.PrivateKey {
+	return x.PrivateKey
+}
+
 // AuthorizeRequestHandler handle authorize request
 func (x *TokenHost) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 	respType := u.BytesToStr(ctx.FormValue(core.Form_ResponseType))
