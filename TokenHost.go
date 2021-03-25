@@ -7,14 +7,12 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/Lukiya/oauth2go/core"
 	"github.com/Lukiya/oauth2go/model"
 	"github.com/Lukiya/oauth2go/security"
 	"github.com/Lukiya/oauth2go/store"
 	"github.com/Lukiya/oauth2go/token"
-	"github.com/gorilla/securecookie"
 	"github.com/pascaldekloe/jwt"
 	log "github.com/syncfuture/go/slog"
 	"github.com/syncfuture/go/u"
@@ -28,9 +26,9 @@ type (
 		EndSessionRequestHandler(ctx *fasthttp.RequestCtx)
 		ClearTokenRequestHandler(ctx *fasthttp.RequestCtx)
 		// GetOptions() *AuthServerOptions
-		GetCookie(ctx *fasthttp.RequestCtx, name string) string
-		SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration)
-		DelCookie(ctx *fasthttp.RequestCtx, key string)
+		// GetCookie(ctx *fasthttp.RequestCtx, name string) string
+		// SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration)
+		// DelCookie(ctx *fasthttp.RequestCtx, key string)
 	}
 
 	TokenHostOption func(*TokenHost)
@@ -67,7 +65,6 @@ type (
 		LogoutEndpoint         string
 		PkceRequired           bool
 		PrivateKey             *rsa.PrivateKey
-		CookieProtector        *securecookie.SecureCookie
 		ClientStore            store.IClientStore
 		TokenStore             store.ITokenStore
 		AuthorizationCodeStore store.IAuthorizationCodeStore
@@ -94,9 +91,9 @@ func (x *TokenHost) BuildTokenHost() {
 	if x.ClaimsGenerator == nil {
 		log.Fatal("ClaimsGenerator cannot be nil")
 	}
-	if x.CookieProtector == nil {
-		log.Fatal("CookieManager cannot be nil")
-	}
+	// if x.CookieProtector == nil {
+	// 	log.Fatal("CookieManager cannot be nil")
+	// }
 	if x.AuthCookieName == "" {
 		x.AuthCookieName = "go.auth"
 	}
@@ -164,7 +161,7 @@ func (x *TokenHost) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	username := x.GetCookie(ctx, x.AuthCookieName)
+	username := x.GetEncryptedCookie(ctx, x.AuthCookieName)
 	if username == "" {
 		returnURL := url.QueryEscape(u.BytesToStr(ctx.URI().RequestURI()))
 		targetURL := fmt.Sprintf("%s?%s=%s", x.LoginEndpoint, core.Form_ReturnUrl, returnURL)
@@ -361,7 +358,7 @@ func (x *TokenHost) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 	}
 
 	// delete login cookie
-	x.DelCookie(ctx, x.AuthCookieName)
+	ctx.Response.Header.DelClientCookie(x.AuthCookieName)
 
 	// redirect to client
 	targetURL := fmt.Sprintf("%s?%s=%s&%s=%s",
@@ -415,57 +412,59 @@ func (x *TokenHost) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	x.TokenStore.RemoveRefreshToken(oldRefreshToken)
 }
 
-func (x *TokenHost) GetCookie(ctx *fasthttp.RequestCtx, name string) string {
-	encryptedCookie := u.BytesToStr(ctx.Request.Header.Cookie(name))
-	if encryptedCookie == "" {
-		return ""
-	}
+func (x *TokenHost) GetEncryptedCookie(ctx *fasthttp.RequestCtx, name string) string {
+	log.Warn("do not use this default function, override it to your own encrypted logic")
+	return u.BytesToStr(ctx.Request.Header.Cookie(name))
+	// encryptedCookie := u.BytesToStr(ctx.Request.Header.Cookie(name))
+	// if encryptedCookie == "" {
+	// 	return ""
+	// }
 
-	var r string
-	err := x.CookieProtector.Decode(name, encryptedCookie, &r)
+	// var r string
+	// err := x.CookieProtector.Decode(name, encryptedCookie, &r)
 
-	if u.LogError(err) {
-		return ""
-	}
+	// if u.LogError(err) {
+	// 	return ""
+	// }
 
-	return r
+	// return r
 }
 
-func (x *TokenHost) SetCookie(ctx *fasthttp.RequestCtx, key, value string, duration time.Duration) {
-	if encryptedCookie, err := x.CookieProtector.Encode(key, value); err == nil {
-		authCookie := fasthttp.AcquireCookie()
-		defer func() {
-			fasthttp.ReleaseCookie(authCookie)
-		}()
-		authCookie.SetKey(key)
-		authCookie.SetValue(encryptedCookie)
-		authCookie.SetSecure(true)
-		authCookie.SetPath("/")
-		authCookie.SetHTTPOnly(true)
-		if duration > 0 {
-			authCookie.SetExpire(time.Now().Add(duration))
-		}
-		ctx.Response.Header.SetCookie(authCookie)
-	} else {
-		u.LogError(err)
-	}
-}
+// func (x *TokenHost) SetCookie(ctx *fasthttp.RequestCtx, key, value string, options ...func(*http.Cookie)) {
+// if encryptedCookie, err := x.CookieProtector.Encode(key, value); err == nil {
+// 	authCookie := fasthttp.AcquireCookie()
+// 	defer func() {
+// 		fasthttp.ReleaseCookie(authCookie)
+// 	}()
+// 	authCookie.SetKey(key)
+// 	authCookie.SetValue(encryptedCookie)
+// 	authCookie.SetSecure(true)
+// 	authCookie.SetPath("/")
+// 	authCookie.SetHTTPOnly(true)
+// 	if duration > 0 {
+// 		authCookie.SetExpire(time.Now().Add(duration))
+// 	}
+// 	ctx.Response.Header.SetCookie(authCookie)
+// } else {
+// 	u.LogError(err)
+// }
+// }
 
-func (x *TokenHost) DelCookie(ctx *fasthttp.RequestCtx, key string) {
-	ctx.Response.Header.DelClientCookie(key)
-	// ctx.Response.Header.DelCookie(key)
+// func (x *TokenHost) DelCookie(ctx *fasthttp.RequestCtx, key string) {
+// 	ctx.Response.Header.DelClientCookie(key)
+// 	// ctx.Response.Header.DelCookie(key)
 
-	// authCookie := fasthttp.AcquireCookie()
-	// defer func() {
-	// 	fasthttp.ReleaseCookie(authCookie)
-	// }()
-	// authCookie.SetKey(key)
-	// authCookie.SetSecure(true)
-	// authCookie.SetPath("/")
-	// authCookie.SetHTTPOnly(true)
-	// authCookie.SetExpire(fasthttp.CookieExpireDelete)
-	// ctx.Response.Header.SetCookie(authCookie)
-}
+// 	// authCookie := fasthttp.AcquireCookie()
+// 	// defer func() {
+// 	// 	fasthttp.ReleaseCookie(authCookie)
+// 	// }()
+// 	// authCookie.SetKey(key)
+// 	// authCookie.SetSecure(true)
+// 	// authCookie.SetPath("/")
+// 	// authCookie.SetHTTPOnly(true)
+// 	// authCookie.SetExpire(fasthttp.CookieExpireDelete)
+// 	// ctx.Response.Header.SetCookie(authCookie)
+// }
 
 // func (x *TokenHost) GetOptions() *AuthServerOptions {
 // 	return x.Options
