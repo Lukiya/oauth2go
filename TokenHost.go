@@ -15,6 +15,7 @@ import (
 	"github.com/Lukiya/oauth2go/token"
 	"github.com/pascaldekloe/jwt"
 	log "github.com/syncfuture/go/slog"
+	"github.com/syncfuture/go/ssecurity"
 	"github.com/syncfuture/go/u"
 	"github.com/valyala/fasthttp"
 )
@@ -75,6 +76,7 @@ type (
 		AuthCodeGenerator      token.IAuthCodeGenerator
 		TokenGenerator         token.ITokenGenerator
 		ClaimsGenerator        token.ITokenClaimsGenerator
+		CookieEncryptor        ssecurity.ICookieEncryptor
 	}
 )
 
@@ -90,6 +92,9 @@ func (x *TokenHost) BuildTokenHost() {
 	}
 	if x.ClaimsGenerator == nil {
 		log.Fatal("ClaimsGenerator cannot be nil")
+	}
+	if x.CookieEncryptor == nil {
+		log.Fatal("CookieEncryptor cannot be nil")
 	}
 	// if x.CookieProtector == nil {
 	// 	log.Fatal("CookieManager cannot be nil")
@@ -161,7 +166,7 @@ func (x *TokenHost) AuthorizeRequestHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	username := x.GetEncryptedCookie(ctx, x.AuthCookieName)
+	username := x.getEncryptedCookie(ctx, x.AuthCookieName)
 	if username == "" {
 		returnURL := url.QueryEscape(u.BytesToStr(ctx.URI().RequestURI()))
 		targetURL := fmt.Sprintf("%s?%s=%s", x.LoginEndpoint, core.Form_ReturnUrl, returnURL)
@@ -412,9 +417,12 @@ func (x *TokenHost) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
 	x.TokenStore.RemoveRefreshToken(oldRefreshToken)
 }
 
-func (x *TokenHost) GetEncryptedCookie(ctx *fasthttp.RequestCtx, name string) string {
-	log.Warn("do not use this default function, override it to your own encrypted logic")
-	return u.BytesToStr(ctx.Request.Header.Cookie(name))
+func (x *TokenHost) getEncryptedCookie(ctx *fasthttp.RequestCtx, name string) string {
+	var r string
+	r = u.BytesToStr(ctx.Request.Header.Cookie(name))
+	err := x.CookieEncryptor.Decrypt(name, r, &r)
+	u.LogError(err)
+	return r
 	// encryptedCookie := u.BytesToStr(ctx.Request.Header.Cookie(name))
 	// if encryptedCookie == "" {
 	// 	return ""
