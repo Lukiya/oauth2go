@@ -1,12 +1,13 @@
 package redis
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/Lukiya/oauth2go/model"
 	"github.com/Lukiya/oauth2go/security"
 	"github.com/Lukiya/oauth2go/store"
-	redis "github.com/go-redis/redis/v7"
+	redis "github.com/go-redis/redis/v8"
 	log "github.com/syncfuture/go/slog"
 	"github.com/syncfuture/go/sredis"
 	"github.com/syncfuture/go/u"
@@ -27,7 +28,7 @@ func NewRedisClientStore(key string, secretEncryptor security.ISecretEncryptor, 
 }
 
 func (x *RedisClientStore) GetClient(clientID string) model.IClient {
-	jsonBytes, err := x.RedisClient.HGet(x.Key, clientID).Bytes()
+	jsonBytes, err := x.RedisClient.HGet(context.Background(), x.Key, clientID).Bytes()
 	if err != nil {
 		if err.Error() == "redis: nil" {
 			log.Warnf("client id: '%s' doesn't exist.", clientID)
@@ -51,7 +52,7 @@ func (x *RedisClientStore) GetClient(clientID string) model.IClient {
 }
 
 func (x *RedisClientStore) GetClients() map[string]model.IClient {
-	maps, err := x.RedisClient.HGetAll(x.Key).Result()
+	maps, err := x.RedisClient.HGetAll(context.Background(), x.Key).Result()
 	if u.LogError(err) {
 		return nil
 	}

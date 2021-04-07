@@ -1,11 +1,12 @@
 package redis
 
 import (
+	"context"
 	"time"
 
 	"github.com/Lukiya/oauth2go/security"
 	"github.com/Lukiya/oauth2go/store"
-	redis "github.com/go-redis/redis/v7"
+	redis "github.com/go-redis/redis/v8"
 	"github.com/syncfuture/go/sredis"
 	"github.com/syncfuture/go/u"
 )
@@ -25,14 +26,15 @@ func NewRedisStateStore(prefix string, secretEncryptor security.ISecretEncryptor
 }
 
 func (x *RedisStateStore) Save(key, value string, expireSeconds int) {
-	err := x.RedisClient.Set(x.Prefix+key, value, time.Duration(expireSeconds)*time.Second).Err()
+	err := x.RedisClient.Set(context.Background(), x.Prefix+key, value, time.Duration(expireSeconds)*time.Second).Err()
 	u.LogError(err)
 }
 func (x *RedisStateStore) GetThenRemove(key string) (r string) {
+	ctx := context.Background()
 	key = x.Prefix + key
-	r = x.RedisClient.Get(key).String()
+	r = x.RedisClient.Get(ctx, key).String()
 	if r != "" {
-		err := x.RedisClient.Del(key).Err()
+		err := x.RedisClient.Del(ctx, key).Err()
 		u.LogError(err)
 	}
 	return
