@@ -390,6 +390,12 @@ func (x *TokenHost) EndSessionRequestHandler(ctx *fasthttp.RequestCtx) {
 
 	// delete login cookie
 	ctx.Response.Header.DelClientCookie(x.AuthCookieName)
+	c := fasthttp.AcquireCookie()
+	defer fasthttp.ReleaseCookie(c)
+	c.SetKey(x.AuthCookieName)
+	c.SetExpire(fasthttp.CookieExpireDelete)
+	c.SetPath("/")
+	ctx.Response.Header.SetCookie(c)
 
 	// redirect to client
 	targetURL := fmt.Sprintf("%s?%s=%s&%s=%s",
