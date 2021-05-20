@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	github.com/go-redis/redis/v8 v8.8.0
-	github.com/gorilla/securecookie v1.1.1
 	github.com/muesli/cache2go v0.0.0-20201208071950-e3e970b4892f
 	github.com/pascaldekloe/jwt v1.10.0
 	github.com/sony/sonyflake v1.0.0

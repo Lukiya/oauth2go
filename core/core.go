@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/gorilla/securecookie"
 	"github.com/sony/sonyflake"
 	"github.com/syncfuture/go/spool"
 	"github.com/syncfuture/go/u"
@@ -88,15 +87,15 @@ const (
 )
 
 var (
-	_idGenerator  *sonyflake.Sonyflake
-	_secureCookie *securecookie.SecureCookie
-	_bytesPool    = spool.NewSyncBytesPool(64)
+	_idGenerator *sonyflake.Sonyflake
+	// _secureCookie *securecookie.SecureCookie
+	_bytesPool = spool.NewSyncBytesPool(64)
 )
 
 func init() {
-	hashKey := u.StrToBytes("JGQUQERAY5xPNVkliVMgGpVjLmjk2VDFAcP2gTI70Dw=")
-	blockKey := u.StrToBytes("6MHdT1pG22lXjFcZzobwlQ==")
-	_secureCookie = securecookie.New(hashKey, blockKey)
+	// hashKey := u.StrToBytes("JGQUQERAY5xPNVkliVMgGpVjLmjk2VDFAcP2gTI70Dw=")
+	// blockKey := u.StrToBytes("6MHdT1pG22lXjFcZzobwlQ==")
+	// _secureCookie = securecookie.New(hashKey, blockKey)
 	_idGenerator = sonyflake.NewSonyflake(sonyflake.Settings{})
 }
 
