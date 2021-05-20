@@ -452,8 +452,12 @@ func (x *TokenHost) ClearTokenRequestHandler(ctx *fasthttp.RequestCtx) {
 func (x *TokenHost) getEncryptedCookie(ctx *fasthttp.RequestCtx, name string) string {
 	var r string
 	r = u.BytesToStr(ctx.Request.Header.Cookie(name))
-	err := x.CookieEncryptor.Decrypt(name, r, &r)
-	u.LogError(err)
+
+	if r != "" {
+		err := x.CookieEncryptor.Decrypt(name, r, &r)
+		u.LogError(err)
+	}
+
 	return r
 	// encryptedCookie := u.BytesToStr(ctx.Request.Header.Cookie(name))
 	// if encryptedCookie == "" {
