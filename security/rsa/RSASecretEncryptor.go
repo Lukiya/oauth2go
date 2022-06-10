@@ -14,7 +14,7 @@ type RSASecretEncryptor struct {
 
 func NewRSASecretEncryptor(certPath string) security.ISecretEncryptor {
 	rsaEncryptor, err := ss.CreateRSAEncryptorFromFile(certPath)
-	u.LogFaltal(err)
+	u.LogFatal(err)
 
 	return &RSASecretEncryptor{
 		encryptor: rsaEncryptor,

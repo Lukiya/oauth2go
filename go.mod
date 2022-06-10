@@ -7,10 +7,10 @@ require (
 	github.com/muesli/cache2go v0.0.0-20211005105910-8e46465cca4a
 	github.com/pascaldekloe/jwt v1.10.0
 	github.com/sony/sonyflake v1.0.0
-	github.com/stretchr/testify v1.7.1
-	github.com/syncfuture/go v1.8.0
+	github.com/stretchr/testify v1.7.2
+	github.com/syncfuture/go v1.8.1
 	github.com/valyala/fasthttp v1.37.0
-	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
+	golang.org/x/oauth2 v0.0.0-20220608161450-d0670ef3b1eb
 	google.golang.org/protobuf v1.28.0
 )
 
@@ -32,9 +32,9 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	golang.org/x/crypto v0.0.0-20220517005047-85d78b3ac167 // indirect
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
