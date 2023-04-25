@@ -39,7 +39,7 @@ message TokenDTO {
     // `json:"token_type,omitempty"`
     string TokenType = 3; 
     // `json:"expires_in,omitempty"`
-    string ExpiresIn = 4; 
+    int32 ExpiresIn = 4; 
 }
 
 message Credential {
