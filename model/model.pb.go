@@ -136,18 +136,18 @@ type TokenInfo struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// `json:"ci,omitempty"`
-	ClientID string `protobuf:"bytes,1,opt,name=ClientID,proto3" json:"ClientID,omitempty"`
-	// `json:"sc,omitempty"`
-	Scopes string `protobuf:"bytes,2,opt,name=Scopes,proto3" json:"Scopes,omitempty"`
-	// `json:"ru,omitempty"`
-	RedirectUri string `protobuf:"bytes,3,opt,name=RedirectUri,proto3" json:"RedirectUri,omitempty"`
-	// `json:"un,omitempty"`
-	Username string `protobuf:"bytes,4,opt,name=Username,proto3" json:"Username,omitempty"`
-	// `json:"cc,omitempty"`
-	CodeChanllenge string `protobuf:"bytes,5,opt,name=CodeChanllenge,proto3" json:"CodeChanllenge,omitempty"`
-	// `json:"ccm,omitempty"`
-	CodeChanllengeMethod string `protobuf:"bytes,6,opt,name=CodeChanllengeMethod,proto3" json:"CodeChanllengeMethod,omitempty"`
+	// @gotags: json:"ci,omitempty"
+	ClientID string `protobuf:"bytes,1,opt,name=ClientID,proto3" json:"ci,omitempty"`
+	// @gotags: json:"sc,omitempty"
+	Scopes string `protobuf:"bytes,2,opt,name=Scopes,proto3" json:"sc,omitempty"`
+	// @gotags: json:"ru,omitempty"
+	RedirectUri string `protobuf:"bytes,3,opt,name=RedirectUri,proto3" json:"ru,omitempty"`
+	// @gotags: json:"un,omitempty"
+	Username string `protobuf:"bytes,4,opt,name=Username,proto3" json:"un,omitempty"`
+	// @gotags: json:"cc,omitempty"
+	CodeChanllenge string `protobuf:"bytes,5,opt,name=CodeChanllenge,proto3" json:"cc,omitempty"`
+	// @gotags: json:"ccm,omitempty"
+	CodeChanllengeMethod string `protobuf:"bytes,6,opt,name=CodeChanllengeMethod,proto3" json:"ccm,omitempty"`
 }
 
 func (x *TokenInfo) Reset() {
@@ -229,14 +229,14 @@ type TokenDTO struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// `json:"access_token,omitempty"`
-	AccessToken string `protobuf:"bytes,1,opt,name=AccessToken,proto3" json:"AccessToken,omitempty"`
-	// `json:"refresh_token,omitempty"`
-	RefreshToken string `protobuf:"bytes,2,opt,name=RefreshToken,proto3" json:"RefreshToken,omitempty"`
-	// `json:"token_type,omitempty"`
-	TokenType string `protobuf:"bytes,3,opt,name=TokenType,proto3" json:"TokenType,omitempty"`
-	// `json:"expires_in,omitempty"`
-	ExpiresIn int32 `protobuf:"varint,4,opt,name=ExpiresIn,proto3" json:"ExpiresIn,omitempty"`
+	// @gotags: json:"access_token,omitempty"
+	AccessToken string `protobuf:"bytes,1,opt,name=AccessToken,proto3" json:"access_token,omitempty"`
+	// @gotags: json:"refresh_token,omitempty"
+	RefreshToken string `protobuf:"bytes,2,opt,name=RefreshToken,proto3" json:"refresh_token,omitempty"`
+	// @gotags: json:"token_type,omitempty"
+	TokenType string `protobuf:"bytes,3,opt,name=TokenType,proto3" json:"token_type,omitempty"`
+	// @gotags: json:"expires_in,omitempty"
+	ExpiresIn int32 `protobuf:"varint,4,opt,name=ExpiresIn,proto3" json:"expires_in,omitempty"`
 }
 
 func (x *TokenDTO) Reset() {

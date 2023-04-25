@@ -17,28 +17,28 @@ message Client {
 }
 
 message TokenInfo {
-    // `json:"ci,omitempty"`
+    // @gotags: json:"ci,omitempty"
     string ClientID = 1; 
-    // `json:"sc,omitempty"`
+    // @gotags: json:"sc,omitempty"
     string Scopes = 2; 
-    // `json:"ru,omitempty"`
+    // @gotags: json:"ru,omitempty"
     string RedirectUri = 3; 
-    // `json:"un,omitempty"`
+    // @gotags: json:"un,omitempty"
     string Username = 4; 
-    // `json:"cc,omitempty"`
+    // @gotags: json:"cc,omitempty"
     string CodeChanllenge = 5; 
-    // `json:"ccm,omitempty"`
+    // @gotags: json:"ccm,omitempty"
     string CodeChanllengeMethod = 6; 
 }
 
 message TokenDTO {
-    // `json:"access_token,omitempty"`
+    // @gotags: json:"access_token,omitempty"
     string AccessToken = 1; 
-    // `json:"refresh_token,omitempty"`
+    // @gotags: json:"refresh_token,omitempty"
     string RefreshToken = 2; 
-    // `json:"token_type,omitempty"`
+    // @gotags: json:"token_type,omitempty"
     string TokenType = 3; 
-    // `json:"expires_in,omitempty"`
+    // @gotags: json:"expires_in,omitempty"
     int32 ExpiresIn = 4; 
 }
 
