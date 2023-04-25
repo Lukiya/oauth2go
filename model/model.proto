@@ -31,6 +31,17 @@ message TokenInfo {
     string CodeChanllengeMethod = 6; 
 }
 
+message TokenDTO {
+    // `json:"access_token,omitempty"`
+    string AccessToken = 1; 
+    // `json:"refresh_token,omitempty"`
+    string RefreshToken = 2; 
+    // `json:"token_type,omitempty"`
+    string TokenType = 3; 
+    // `json:"expires_in,omitempty"`
+    string ExpiresIn = 4; 
+}
+
 message Credential {
     string Username = 1;
     string Password = 2;
