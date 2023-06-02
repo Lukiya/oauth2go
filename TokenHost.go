@@ -14,6 +14,8 @@ import (
 	"github.com/Lukiya/oauth2go/store"
 	"github.com/Lukiya/oauth2go/token"
 	"github.com/pascaldekloe/jwt"
+	"github.com/syncfuture/go/serr"
+	"github.com/syncfuture/go/sid"
 	log "github.com/syncfuture/go/slog"
 	"github.com/syncfuture/go/ssecurity"
 	"github.com/syncfuture/go/u"
@@ -604,7 +606,15 @@ func (x *TokenHost) handleResourceOwnerTokenRequest(ctx *fasthttp.RequestCtx, cl
 	// verify username & password
 	username := u.BytesToStr(ctx.FormValue(core.Form_Username))
 	password := u.BytesToStr(ctx.FormValue(core.Form_Password))
-	success := x.ResourceOwnerValidator.Verify(username, password)
+	success, err := x.ResourceOwnerValidator.Verify(username, password)
+	if err != nil {
+		errID := sid.GenerateID()
+		err := serr.New("internel error")
+		errDesc := serr.New(errID)
+		x.writeError(ctx, http.StatusInternalServerError, err, errDesc)
+		return
+	}
+
 	if success {
 		// pass, issue token
 		x.issueTokenByRequestInfo(ctx, core.GrantType_AuthorizationCode, client, &model.TokenInfo{
