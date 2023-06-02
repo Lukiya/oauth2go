@@ -16,6 +16,7 @@ import (
 	"github.com/pascaldekloe/jwt"
 	"github.com/syncfuture/go/serr"
 	"github.com/syncfuture/go/sid"
+	"github.com/syncfuture/go/slog"
 	log "github.com/syncfuture/go/slog"
 	"github.com/syncfuture/go/ssecurity"
 	"github.com/syncfuture/go/u"
@@ -609,9 +610,11 @@ func (x *TokenHost) handleResourceOwnerTokenRequest(ctx *fasthttp.RequestCtx, cl
 	success, err := x.ResourceOwnerValidator.Verify(username, password)
 	if err != nil {
 		errID := sid.GenerateID()
-		err := serr.New("internel error")
+		slog.Errorf("%s: %+v", errID, err)
+
+		errBrief := serr.New("internel error")
 		errDesc := serr.New(errID)
-		x.writeError(ctx, http.StatusInternalServerError, err, errDesc)
+		x.writeError(ctx, http.StatusInternalServerError, errBrief, errDesc)
 		return
 	}
 
