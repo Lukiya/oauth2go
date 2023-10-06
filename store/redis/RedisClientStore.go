@@ -7,7 +7,7 @@ import (
 	"github.com/Lukiya/oauth2go/model"
 	"github.com/Lukiya/oauth2go/security"
 	"github.com/Lukiya/oauth2go/store"
-	redis "github.com/go-redis/redis/v8"
+	redis "github.com/redis/go-redis/v9"
 	log "github.com/syncfuture/go/slog"
 	"github.com/syncfuture/go/sredis"
 	"github.com/syncfuture/go/u"
