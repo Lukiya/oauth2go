@@ -537,7 +537,7 @@ func (x *TokenHost) handleClientCredentialsTokenRequest(ctx *fasthttp.RequestCtx
 func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx, client model.IClient) {
 	// exchange token by using auhorization code
 	code := u.BytesToStr(ctx.FormValue(core.Form_Code))
-	clientID := u.BytesToStr(ctx.FormValue(core.Form_ClientID))
+	// clientID := u.BytesToStr(ctx.FormValue(core.Form_ClientID))
 	redirectUri := u.BytesToStr(ctx.FormValue(core.Form_RedirectUri))
 
 	tokenInfo := x.AuthorizationCodeStore.GetThenRemove(code)
@@ -549,9 +549,10 @@ func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx
 		return
 	}
 
-	if client.GetID() != clientID || clientID != tokenInfo.ClientID {
+	// if client.GetID() != clientID || clientID != tokenInfo.ClientID {
+	if client.GetID() != tokenInfo.ClientID {
 		err := errors.New(core.Err_invalid_request)
-		errDesc := fmt.Errorf("client id doesn't match, original: '%s', current: '%s', form: '%s'", tokenInfo.ClientID, client.GetID(), clientID)
+		errDesc := fmt.Errorf("client id doesn't match, original: '%s', current: '%s'", tokenInfo.ClientID, client.GetID())
 		slog.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
