@@ -119,14 +119,14 @@ func (x *DefaultClientValidator) VerifyCredential(credential *model.Credential) 
 
 	if client == nil {
 		err := errors.New(core.Err_invalid_client)
-		errDesc := errors.New("client not exists")
+		errDesc := fmt.Errorf("client '%s' does not exist", credential.Username)
 		log.Warn(errDesc.Error())
 		return nil, err, errDesc
 	}
 
 	if credential.Password != client.GetSecret() {
 		err := errors.New(core.Err_invalid_client)
-		errDesc := errors.New("invalid client")
+		errDesc := fmt.Errorf("password for client '%s' is incorrect", credential.Username)
 		log.Warn(errDesc.Error())
 		return nil, err, errDesc
 	}
