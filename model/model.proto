@@ -10,10 +10,11 @@ message Client {
     int32 AccessTokenExpireSeconds  = 3;
     int32 RefreshTokenExpireSeconds  = 4;
     int64 PermissionLevel  = 5;
-    repeated string Grants  = 6;
-    repeated string Audiences  = 7;
-    repeated string Scopes  = 8;
-    repeated string RedirectUris  = 9;
+    bool IsPublic = 6;
+    repeated string Grants  = 7;
+    repeated string Audiences  = 8;
+    repeated string Scopes  = 9;
+    repeated string RedirectUris  = 10;
 }
 
 message TokenInfo {
@@ -26,9 +27,9 @@ message TokenInfo {
     // @gotags: json:"un,omitempty"
     string Username = 4; 
     // @gotags: json:"cc,omitempty"
-    string CodeChanllenge = 5; 
+    string CodeChallenge = 5; 
     // @gotags: json:"ccm,omitempty"
-    string CodeChanllengeMethod = 6; 
+    string CodeChallengeMethod = 6; 
 }
 
 message TokenDTO {

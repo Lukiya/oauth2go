@@ -99,6 +99,9 @@ func init() {
 	_idGenerator = sonyflake.NewSonyflake(sonyflake.Settings{})
 }
 
+// ToSHA256Base64URL computes the SHA-256 hash of the input string
+// and encodes the result in Base64 URL format without padding.
+// This function is used in PKCE to generate the code_challenge.
 func ToSHA256Base64URL(in string) string {
 	h := sha256.New()
 	h.Write(u.StrToBytes(in))

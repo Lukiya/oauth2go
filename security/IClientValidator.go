@@ -124,6 +124,13 @@ func (x *DefaultClientValidator) VerifyCredential(credential *model.Credential) 
 		return nil, err, errDesc
 	}
 
+	// Didn't provide Secret, but client is public
+	if credential.Password == "" && client.GetIsPublic() {
+		// allow public clients to skip secret validation
+		return client, nil, nil
+	}
+
+	// Check if the secret matches the client secret
 	if credential.Password != client.GetSecret() {
 		err := errors.New(core.Err_invalid_client)
 		errDesc := fmt.Errorf("password for client '%s' is incorrect", credential.Username)
@@ -132,7 +139,6 @@ func (x *DefaultClientValidator) VerifyCredential(credential *model.Credential) 
 	}
 
 	return client, nil, nil
-
 }
 
 // VerifyCredentialGrantType verify client id, secret & grant type
@@ -273,7 +279,7 @@ func (x *DefaultClientValidator) VerifyRedirectURI(clientID, redirectURI string)
 // validateGrants _
 func (x *DefaultClientValidator) validateGrants(client model.IClient, grantType string) (error, error) {
 	allowedGrants := client.GetGrants()
-	if allowedGrants != nil && len(allowedGrants) > 0 {
+	if len(allowedGrants) > 0 {
 		for _, allowedGrant := range allowedGrants {
 			if allowedGrant == grantType {
 				return nil, nil
@@ -290,7 +296,7 @@ func (x *DefaultClientValidator) validateGrants(client model.IClient, grantType 
 // validateScopes _
 func (x *DefaultClientValidator) validateScopes(client model.IClient, scopesStr string) (error, error) {
 	allowedScopes := client.GetScopes()
-	if allowedScopes != nil && len(allowedScopes) > 0 {
+	if len(allowedScopes) > 0 {
 		requestedScopeArray := strings.Split(scopesStr, core.Seperator_Scope)
 
 		for _, requestedScope := range requestedScopeArray {
@@ -323,7 +329,7 @@ func isScopeAllowed(requestedScope string, allowedScopes []string) bool {
 // validateRedirectUris _
 func (x *DefaultClientValidator) validateRedirectUris(client model.IClient, redirectURI string) (error, error) {
 	allowedrUris := client.GetRedirectUris()
-	if allowedrUris != nil && len(allowedrUris) > 0 {
+	if len(allowedrUris) > 0 {
 		for _, allowedrUri := range allowedrUris {
 			if allowedrUri == redirectURI {
 				return nil, nil

@@ -6,6 +6,7 @@ type IClient interface {
 	GetAccessTokenExpireSeconds() int32
 	GetRefreshTokenExpireSeconds() int32
 	GetPermissionLevel() int64
+	GetIsPublic() bool
 	GetGrants() []string
 	GetAudiences() []string
 	GetScopes() []string

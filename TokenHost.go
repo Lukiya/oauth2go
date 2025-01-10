@@ -238,22 +238,22 @@ func (x *TokenHost) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, cl
 	}
 
 	// pkce required
-	codeChanllenge := u.BytesToStr(ctx.FormValue(core.Form_CodeChallenge))
+	codeChallenge := u.BytesToStr(ctx.FormValue(core.Form_CodeChallenge))
 
-	if codeChanllenge == "" {
-		// client didn't provide pkce chanllenge, write error
+	if codeChallenge == "" {
+		// client didn't provide pkce challenge, write error
 		err := errors.New(core.Err_invalid_request)
-		errDesc := errors.New("code chanllenge is required")
+		errDesc := errors.New("code challenge is required")
 		slog.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
 
-	// client provided pkce chanllenge
-	codeChanllengeMethod := u.BytesToStr(ctx.FormValue(core.Form_CodeChallengeMethod))
-	if codeChanllengeMethod == "" {
-		codeChanllengeMethod = core.Pkce_Plain
-	} else if codeChanllengeMethod != core.Pkce_Plain && codeChanllengeMethod != core.Pkce_S256 {
+	// client provided pkce challenge
+	codeChallengeMethod := u.BytesToStr(ctx.FormValue(core.Form_CodeChallengeMethod))
+	if codeChallengeMethod == "" {
+		codeChallengeMethod = core.Pkce_Plain
+	} else if codeChallengeMethod != core.Pkce_Plain && codeChallengeMethod != core.Pkce_S256 {
 		err := errors.New(core.Err_invalid_request)
 		errDesc := errors.New("transform algorithm not supported")
 		slog.Warn(errDesc.Error())
@@ -266,12 +266,12 @@ func (x *TokenHost) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, cl
 	x.AuthorizationCodeStore.Save(
 		code,
 		&model.TokenInfo{
-			ClientID:             client.GetID(),
-			Scopes:               scopesStr,
-			RedirectUri:          redirectURI,
-			Username:             username,
-			CodeChanllenge:       codeChanllenge,
-			CodeChanllengeMethod: codeChanllengeMethod,
+			ClientID:            client.GetID(),
+			Scopes:              scopesStr,
+			RedirectUri:         redirectURI,
+			Username:            username,
+			CodeChallenge:       codeChallenge,
+			CodeChallengeMethod: codeChallengeMethod,
 		},
 	)
 
@@ -282,9 +282,9 @@ func (x *TokenHost) AuthorizationCodeRequestHandler(ctx *fasthttp.RequestCtx, cl
 		core.Form_State,
 		url.QueryEscape(state),
 		core.Form_CodeChallenge,
-		url.QueryEscape(codeChanllenge),
+		url.QueryEscape(codeChallenge),
 		core.Form_CodeChallengeMethod,
-		codeChanllengeMethod,
+		codeChallengeMethod,
 	)
 	core.Redirect(ctx, targetURL)
 }
@@ -552,7 +552,8 @@ func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx
 	// if client.GetID() != clientID || clientID != tokenInfo.ClientID {
 	if client.GetID() != tokenInfo.ClientID {
 		err := errors.New(core.Err_invalid_request)
-		errDesc := fmt.Errorf("client id doesn't match, original: '%s', current: '%s'", tokenInfo.ClientID, client.GetID())
+		errDesc := errors.New("client id mismatch")
+		slog.Warnf("client id doesn't match detected: original '%s', current '%s'", tokenInfo.ClientID, client.GetID())
 		slog.Warn(errDesc.Error())
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
@@ -560,8 +561,8 @@ func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx
 
 	if redirectUri != tokenInfo.RedirectUri {
 		err := errors.New(core.Err_invalid_request)
-		errDesc := fmt.Errorf("redirect uri doesn't match, original: '%s', current: '%s'", tokenInfo.RedirectUri, redirectUri)
-		slog.Warn(errDesc.Error())
+		errDesc := errors.New("redirect URI mismatch")
+		slog.Warnf("Redirect URI mismatch detected: original '%s', current '%s'", tokenInfo.RedirectUri, redirectUri)
 		x.writeError(ctx, http.StatusBadRequest, err, errDesc)
 		return
 	}
@@ -583,7 +584,7 @@ func (x *TokenHost) handleAuthorizationCodeTokenRequest(ctx *fasthttp.RequestCtx
 		return
 	}
 
-	if !x.PkceValidator.Verify(codeVierifier, tokenInfo.CodeChanllenge, tokenInfo.CodeChanllengeMethod) {
+	if !x.PkceValidator.Verify(codeVierifier, tokenInfo.CodeChallenge, tokenInfo.CodeChallengeMethod) {
 		err := errors.New(core.Err_invalid_grant)
 		errDesc := errors.New("code verifier is invalid")
 		slog.Warn(errDesc.Error())
