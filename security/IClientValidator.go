@@ -135,6 +135,7 @@ func (x *DefaultClientValidator) VerifyCredential(credential *model.Credential) 
 		err := errors.New(core.Err_invalid_client)
 		errDesc := fmt.Errorf("password for client '%s' is incorrect", credential.Username)
 		log.Warn(errDesc.Error())
+		log.Debugf("%s secret: %s, provided secret: %s", client.GetID(), client.GetSecret(), credential.Password)
 		return nil, err, errDesc
 	}
 
