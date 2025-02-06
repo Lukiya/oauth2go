@@ -8,7 +8,7 @@ require (
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/sony/sonyflake v1.2.0
 	github.com/stretchr/testify v1.10.0
-	github.com/syncfuture/go v1.18.1
+	github.com/syncfuture/go v1.18.2
 	github.com/valyala/fasthttp v1.58.0
 	golang.org/x/oauth2 v0.26.0
 	google.golang.org/protobuf v1.36.5
