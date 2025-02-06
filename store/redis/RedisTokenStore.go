@@ -49,7 +49,11 @@ func (x *RedisTokenStore) GetThenRemoveTokenInfo(refreshToken string) *model.Tok
 
 	// get from redis
 	str, err := x.RedisClient.Get(context.Background(), key).Result()
-	if u.LogError(err) {
+	if err != nil {
+		if err == redis.Nil { // do not log this error
+			return nil
+		}
+		u.LogError(err)
 		return nil
 	}
 
