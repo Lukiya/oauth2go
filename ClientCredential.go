@@ -19,7 +19,7 @@ func (x *ClientCredential) Token() (*oauth2.Token, error) {
 	var err error
 
 	if x.AccessToken == nil || time.Now().UTC().After(x.AccessToken.Expiry) {
-		// 如果没有令牌或者令牌已过期，请求新令牌
+		// Request a new token if there is no token or the token has expired
 		x.AccessToken, err = x.Config.Token(context.Background())
 		if err != nil {
 			return x.AccessToken, serr.WithStack(err)
